@@ -1,0 +1,6 @@
+*.trace
+vgcore.*
+test_files
+proj
+*.o
+*.kate-swp
