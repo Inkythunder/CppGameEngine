@@ -9,14 +9,13 @@
 #include <iostream>
 #include <filesystem>
 
-struct Vertex {
+struct ObjVertex {
     Vec3 position;
     Vec3 normal;
     Vec2 uv;
-    uint32_t material_index; //index in Model::materials
 };
 
-struct Material {
+struct ObjMaterial {
     std::string name;
     Vec3 light_ambient;
     Vec3 light_diffuse;
@@ -24,17 +23,19 @@ struct Material {
     float specular_exponent;
     std::filesystem::path diffuse_texture;
 
-    Material();
+    ObjMaterial();
 };
 
-struct Mesh {
-    std::string name;
-    std::vector<Vertex> vertices;
+struct ObjMesh {
+    std::vector<ObjVertex> vertices;
+    std::string material_name;
 };
 
-struct Model {
-    std::map<std::string, Mesh> meshes;
-    std::vector<Material> materials;
+struct ObjModel {
+    std::map<std::string, ObjMesh> meshes;
 };
 
-Model loadObjFile(const std::filesystem::path& filename);
+ObjModel loadObjFile(
+    const std::filesystem::path& filename,
+    std::map<std::string, ObjMaterial>& materials
+);

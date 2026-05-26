@@ -1,7 +1,7 @@
 #include "obj_loader.h"
 #include <fstream>
 
-Material::Material()
+ObjMaterial::ObjMaterial()
     : light_ambient{0, 0, 0},
       light_diffuse{0, 0, 0},
       light_specular{0, 0, 0},
@@ -66,7 +66,7 @@ std::vector<std::string> separate_line(const std::string& line, const char separ
     return all_tokens;
 }
 
-void loadMaterialFile(const std::filesystem::path& filename, std::vector<Material>& materials) {
+void loadMaterialFile(const std::filesystem::path& filename, std::map<std::string, ObjMaterial>& materials) {
 
     const std::filesystem::path parent_path = filename.parent_path();
 
@@ -80,7 +80,7 @@ void loadMaterialFile(const std::filesystem::path& filename, std::vector<Materia
     file.exceptions(std::ifstream::badbit);
 
     std::string line;
-    Material new_material;
+    ObjMaterial new_material;
     bool new_material_is_set = false;
 
     while(getline(file, line)) {
@@ -96,9 +96,9 @@ void loadMaterialFile(const std::filesystem::path& filename, std::vector<Materia
         if(key == "newmtl") {
 
             if(new_material_is_set) {
-                materials.push_back(new_material);
+                materials.insert({new_material.name, new_material});
             }
-            new_material = Material();
+            new_material = ObjMaterial();
             new_material.name = value;
             new_material_is_set = true;
 
@@ -129,10 +129,12 @@ void loadMaterialFile(const std::filesystem::path& filename, std::vector<Materia
             new_material.diffuse_texture = parent_path / texture;
         }
     }
-    materials.push_back(new_material);
+    if(new_material_is_set) {
+        materials.insert({new_material.name, new_material});
+    }
 }
 
-Model loadObjFile(const std::filesystem::path& filename) {
+ObjModel loadObjFile(const std::filesystem::path& filename, std::map<std::string, ObjMaterial>& materials) {
 
     const std::filesystem::path parent_path = filename.parent_path();
     std::cout << "Opening " << filename << std::endl;
@@ -145,13 +147,11 @@ Model loadObjFile(const std::filesystem::path& filename) {
     file.exceptions(std::ifstream::badbit);
 
     std::string line;
-    Model model;
-    Vertex current_vertex;
+    ObjModel model;
     std::vector<Vec3> file_vertices;
     std::vector<Vec2> uvs;
     std::vector<Vec3> normals;
-    uint32_t active_material_index = 0;
-    Mesh current_mesh;
+    ObjMesh* current_mesh_ptr = nullptr;
 
     while(getline(file, line)) {
 
@@ -164,17 +164,16 @@ Model loadObjFile(const std::filesystem::path& filename) {
 
         if(key == "mtllib") {
             const std::filesystem::path mtl_file = parent_path / value;
+            loadMaterialFile(mtl_file, materials);
 
-            loadMaterialFile(mtl_file, model.materials);
-
-        } else if(key == "g") {
+        } /*else if(key == "g") {
             if(!current_mesh.vertices.empty()) {
                 model.meshes[current_mesh.name] = current_mesh;
             }
             current_mesh.name = value;
             current_mesh.vertices.clear();
 
-        } else if(key == "v") {
+        } */else if(key == "v") {
             float x, y, z;
             sscanf(value.c_str(), "%f %f %f", &x, &y, &z);
             Vec3 position = {x, y, z};
@@ -183,24 +182,26 @@ Model loadObjFile(const std::filesystem::path& filename) {
         } else if(key == "vt") {
             float u, v;
             sscanf(value.c_str(), "%f %f", &u, &v);
-            Vec2 uv = {u, v};
-            uvs.push_back(uv);
+            uvs.push_back({u, v});
 
         } else if(key == "vn") {
             float x, y, z;
             sscanf(value.c_str(), "%f %f %f", &x, &y, &z);
-            Vec3 normal = {x, y, z};
-            normals.push_back(normal);
+            normals.push_back({x, y, z});
 
         } else if (key == "usemtl") {
-            for(size_t i = 0; i < model.materials.size(); i++) {
-                if(model.materials[i].name == value) {
-                    active_material_index = i;
-                }
+            current_mesh_ptr = nullptr;
+
+            if(model.meshes.find(value) == model.meshes.end()) {
+                ObjMesh new_mesh;
+                new_mesh.material_name = value;
+                model.meshes.insert({value, new_mesh});
             }
+            current_mesh_ptr = &model.meshes[value];
+
         } else if(key == "f") {
 
-            std::vector<Vertex> face_vertices;
+            std::vector<ObjVertex> face_vertices;
 
             std::vector<std::string> tokens = separate_line(value, ' ');
             for(size_t i = 0; i < tokens.size(); i++) {
@@ -208,8 +209,7 @@ Model loadObjFile(const std::filesystem::path& filename) {
                 const std::vector<std::string> face_values = separate_line(tokens[i], '/');
 
                 uint32_t v = 0, t = 0, n = 0;
-                Vertex vertex;
-
+                ObjVertex vertex;
 
                 v = std::stoul(face_values[0]);
                 vertex.position = file_vertices[v - 1];
@@ -224,19 +224,16 @@ Model loadObjFile(const std::filesystem::path& filename) {
                     vertex.normal = normals[n - 1];
                 }
 
-                vertex.material_index = active_material_index;
                 face_vertices.push_back(vertex);
             }
 
             for(size_t i = 0; i + 2 < face_vertices.size(); i++) {
-                current_mesh.vertices.push_back(face_vertices[0]);
-                current_mesh.vertices.push_back(face_vertices[i + 1]);
-                current_mesh.vertices.push_back(face_vertices[i + 2]);
+                current_mesh_ptr->vertices.push_back(face_vertices[0]);
+                current_mesh_ptr->vertices.push_back(face_vertices[i + 1]);
+                current_mesh_ptr->vertices.push_back(face_vertices[i + 2]);
             }
         }
     }
-    model.meshes[current_mesh.name] = current_mesh;
 
     return model;
 }
-

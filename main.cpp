@@ -13,14 +13,7 @@
 #include <string.h>
 #include <fstream>
 #include "obj_loader.h"
-#include "load_texture.h"
-
-struct GLVertex{
-    Vec3 pos;
-    Vec2 tex_pos;
-    Vec3 normal;
-    Vec3 col;
-};
+#include "open_gl.h"
 
 struct Offset{
     float x;
@@ -94,32 +87,38 @@ int get_shader_compile_error(GLuint shader) {
     return 1;
 }
 
+void GLdraw_call(RenderableThing& thing) {
+    thing.mesh->bind();
+    thing.texture->bind();
+
+    glUniform3f(
+        thing.uniformLocs.ka_location,
+        thing.material.light_ambient.x,
+        thing.material.light_ambient.y,
+        thing.material.light_ambient.z
+    );
+    glUniform3f(
+        thing.uniformLocs.kd_location,
+        thing.material.light_diffuse.x,
+        thing.material.light_diffuse.y,
+        thing.material.light_diffuse.z
+    );
+
+    glDrawArrays(GL_TRIANGLES, 0, thing.mesh->get_vertex_count());
+}
+
 int main(int argc, char* argv[]) {
 
-    vec3 point_light = {0, 20, 50};
+    vec3 point_light = {0, 30, 50};
 
     if(argc < 2) {
         std::println(std::cerr, "No object file provided.");
         return 1;
     }
 
+    std::map<std::string, ObjMaterial> materials;
     std::cout << "argv[1] = " << argv[1] << std::endl;
-    Model model = loadObjFile(argv[1]);
-
-    std::vector<GLVertex> all_vertices;
-
-    for(std::map<std::string, Mesh>::iterator it = model.meshes.begin(); it != model.meshes.end(); it++) {
-        Mesh mesh = it->second;
-        for(size_t i = 0; i < mesh.vertices.size(); i++) {
-            GLVertex vert = {
-                mesh.vertices[i].position,
-                mesh.vertices[i].uv,
-                mesh.vertices[i].normal,
-                {1, 1, 1}
-            };
-            all_vertices.push_back(vert);
-        }
-    }
+    ObjModel model = loadObjFile(argv[1], materials);
 
     // Loads the vertex and fragment shader from the glsl files I created.
     const std::string vertex_shader_text = get_shader_content("vertex.glsl");
@@ -155,30 +154,9 @@ int main(int argc, char* argv[]) {
     // can't find it anywhere
     gladLoadGL(glfwGetProcAddress);
 
-    std::vector<std::filesystem::path> texture_files;
-    for(size_t i = 0; i < model.materials.size(); i++) {
-        texture_files.push_back(model.materials[i].diffuse_texture);
-    }
-
-    combined_texture_type combined_texture = load_texture(texture_files);
-    GLuint texture = combined_texture.combined_texture;
-
     // vsync
     glfwSwapInterval(1);
 
-    // NOTE: OpenGL error checks have been omitted for brevity
-    // OpenGL's type unsigned int
-    GLuint vertex_buffer;
-    // Generates 1 buffer object name and stores it in vertex_buffer???
-    glGenBuffers(1, &vertex_buffer);
-    // Binds a buffer object to the specified buffer binding point???
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    // Creates a bew data store for a buffer object???
-    if(all_vertices.empty()) {
-        std::cout << "Vertices vector empty" << std::endl;
-        return 1;
-    }
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLVertex) * all_vertices.size(), all_vertices.data(), GL_STATIC_DRAW);
     // Creates a shader object
     const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     // Sets the source code for the shader
@@ -225,45 +203,58 @@ int main(int argc, char* argv[]) {
     glUseProgram(program);
 
     // uniform variable called MVP (Model View Projection)
-    const GLint mvp_location = glGetUniformLocation(program, "MVP");
-    const GLint model_location = glGetUniformLocation(program, "model");
-    const GLint vpoint_location = glGetUniformLocation(program, "vPoint");
     const GLint vpos_location = glGetAttribLocation(program, "vPos");
-    const GLint vcol_location = glGetAttribLocation(program, "vCol");
     const GLint vtex_location = glGetAttribLocation(program, "vTex");
     const GLint vnorm_location = glGetAttribLocation(program, "vNorm");
+    const GLint vp_location = glGetUniformLocation(program, "VP");
+    const GLint model_location = glGetUniformLocation(program, "model");
+    const GLint vpoint_location = glGetUniformLocation(program, "vPoint");
+    const GLint ka_location = glGetUniformLocation(program, "ka");
+    const GLint kd_location = glGetUniformLocation(program, "kd");
 
-    // make a vertex_array and generate it with OpenGL
-    GLuint vertex_array;
-    glGenVertexArrays(1, &vertex_array);
-    // binds it???
-    glBindVertexArray(vertex_array);
-    // enables vpos as an attribute and tells OpenGL what the offset of vpos is in vertex
-    glEnableVertexAttribArray(vpos_location);
-    glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertex), (void*) offsetof(GLVertex, pos));
-
-    glEnableVertexAttribArray(vcol_location);
-    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertex), (void*) offsetof(GLVertex, col));
-
-    glEnableVertexAttribArray(vtex_location);
-    glVertexAttribPointer(vtex_location, 2, GL_FLOAT, GL_FALSE, sizeof(GLVertex), (void*) offsetof(GLVertex, tex_pos));
-
-    glEnableVertexAttribArray(vnorm_location);
-    glVertexAttribPointer(vnorm_location, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertex), (void*) offsetof(GLVertex, normal));
-
-
-
-    printf("vPos: %d, vCol: %d, vTex: %d, vNorm: %d\n",
-           vpos_location, vcol_location, vtex_location, vnorm_location);
+    GLAttributeLocations attribLocs(vpos_location, vtex_location, vnorm_location);
+    GLUniformLocations uniformLocs(ka_location, kd_location);
 
     // Enable depth test
     glEnable(GL_DEPTH_TEST);
     // Accept fragment if it closer to the camera than the former one
     glDepthFunc(GL_LESS);
 
+    mat4x4 m, vp;
+    // makes m an identity matrix which is all 0s except for a diagonal of 1s
+    mat4x4_identity(m);
+
+    mat4x4_translate_in_place(m, offset.x, offset.y - 1, -5.f);
+
+    m[0][0] /= 300.0;
+    m[1][1] /= 300.0;
+    m[2][2] /= 300.0;
+    //mat4x4_rotate_Y(m, m, (float) glfwGetTime()/2);
+    mat4x4_rotate_X(m, m, -1.2f);
+
+    std::vector<RenderableThing> list_of_things;
+
+    for(std::map<std::string, ObjMesh>::iterator it = model.meshes.begin(); it != model.meshes.end(); it++) {
+
+        ObjMaterial& material = materials[it->second.material_name];
+        std::shared_ptr<GLTexture> texture = std::make_shared<GLTexture>(material.diffuse_texture);
+
+        std::shared_ptr<GLMesh> mesh = std::make_shared<GLMesh>(it->second.vertices.data(), it->second.vertices.size(), attribLocs);
+
+        RenderableThing thing(
+            mesh,
+            texture,
+            material,
+            m,
+            uniformLocs
+        );
+
+        list_of_things.push_back(thing);
+    }
+
     while (!glfwWindowShouldClose(window)) {
-        point_light[0] = (float)cos(glfwGetTime()) * 20.f;
-        point_light[2] = (float)sin(glfwGetTime()) * 20.f;
+        point_light[0] = (float)cos(glfwGetTime()) * 50.f;
+        point_light[2] = (float)sin(glfwGetTime()) * 50.f;
         glUniform3f(vpoint_location, point_light[0], point_light[1], point_light[2]);
         int width, height;
         // gets the number of pixels in the given window
@@ -276,31 +267,17 @@ int main(int argc, char* argv[]) {
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        mat4x4 m, p, mvp;
-        // makes m an identity matrix which is all 0s except for a diagonal of 1s
-        mat4x4_identity(m);
-
-        mat4x4_translate_in_place(m, offset.x, offset.y - 1, -5.f);
-        //mat4x4_rotate_Y(m, m, (float) glfwGetTime()/2);
-        mat4x4_rotate_X(m, m, -1.2f);
-
-        //mat4x4_scale(m, m, 0.01);
-
         // perspective projection
-        mat4x4_perspective(p, 1.f, ratio, 0.1f, 100.f);
-
-        // combines into one matrix containing projection and rotation
-        mat4x4_mul(mvp, p, m);
+        mat4x4_perspective(vp, 1.f, ratio, 0.1f, 100.f);
 
         // setting the uniform variable mvp_location to mvp(ram)
-        glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) &mvp);
+        glUniformMatrix4fv(vp_location, 1, GL_FALSE, (const GLfloat*) &vp);
         glUniformMatrix4fv(model_location, 1, GL_FALSE, (const GLfloat*) &m);
-        // make vertex array active
-        glBindVertexArray(vertex_array);
 
-        // draws faces with "Wood" texture
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glDrawArrays(GL_TRIANGLES, 0, all_vertices.size());
+        for(size_t i = 0; i < list_of_things.size(); i++) {
+
+            GLdraw_call(list_of_things[i]);
+        }
 
         GLenum err = glGetError();
         if (err != GL_NO_ERROR) {
