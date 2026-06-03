@@ -41,11 +41,28 @@ GLTexture::~GLTexture() {
     glDeleteTextures(1, &this->texture_id);
 }
 
+void GLMaterial::bind(GLUniformLocations& uniforms) {
+    glUniform3f(
+        uniforms.ka_location,
+        this->ka.x,
+        this->ka.y,
+        this->ka.z
+    );
+    glUniform3f(
+        uniforms.kd_location,
+        this->kd.x,
+        this->kd.y,
+        this->kd.z
+    );
+    texture->bind();
+}
+
 GLMesh::GLMesh(
     const ObjVertex* vertices,
     size_t count,
-    GLAttributeLocations attribLocs
-): vertex_count(count) {
+    GLAttributeLocations attribLocs,
+    std::shared_ptr<GLMaterial> material
+): vertex_count(count), material(material) {
 
     GLuint vertex_array;
     glGenVertexArrays(1, &vertex_array);
@@ -69,13 +86,37 @@ GLMesh::GLMesh(
     this->vertex_array = vertex_array;
 }
 
-void GLMesh::bind() {
-
+void GLMesh::bind(GLUniformLocations& uniforms) {
     glBindVertexArray(this->vertex_array);
+    material->bind(uniforms);
 }
 
 GLMesh::~GLMesh() {
 
     glDeleteVertexArrays(1, &this->vertex_array);
     glDeleteBuffers(1, &this->vertex_buffer);
+}
+
+Entity::Entity(
+    Vec3 pos,
+    quat rot,
+    float scale
+): pos(pos), scale(scale) {
+    memcpy(this->rot, rot, sizeof(quat));
+}
+
+void Entity::convert_to_renderables(std::vector<RenderableThing>& output) {
+
+    mat4x4 m;
+    mat4x4_from_quat(m, this->rot);
+    mat4x4_translate_in_place(m, this->pos.x, this->pos.y, this->pos.z);
+    m[0][0] *= scale;
+    m[1][1] *= scale;
+    m[2][2] *= scale;
+
+    for(size_t i = 0; i < this->meshes.size(); i++) {
+
+        RenderableThing thing(this->meshes[i], m);
+        output.push_back(thing);
+    }
 }

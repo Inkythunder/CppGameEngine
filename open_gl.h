@@ -40,10 +40,27 @@ private:
     GLuint texture_id;
 };
 
+class GLMaterial {
+public:
+
+    void bind(GLUniformLocations& uniforms);
+
+    GLMaterial(
+        std::shared_ptr<GLTexture> texture,
+        Vec3 kd,
+        Vec3 ka
+    ): texture(texture), kd(kd), ka(ka) {}
+
+private:
+    std::shared_ptr<GLTexture> texture;
+    Vec3 kd;
+    Vec3 ka;
+};
+
 class GLMesh {
 public:
-    GLMesh(const ObjVertex* vertices, size_t count, GLAttributeLocations attribLocs);
-    void bind();
+    GLMesh(const ObjVertex* vertices, size_t count, GLAttributeLocations attribLocs, std::shared_ptr<GLMaterial> material);
+    void bind(GLUniformLocations& uniforms);
     ~GLMesh();
     GLMesh(const GLMesh&) = delete;
     GLMesh operator=(const GLMesh&) = delete;
@@ -56,24 +73,36 @@ private:
     size_t vertex_count;
     GLuint vertex_buffer;
     GLuint vertex_array;
+    std::shared_ptr<GLMaterial> material;
 };
 
 struct RenderableThing {
     std::shared_ptr<GLMesh> mesh;
-    std::shared_ptr<GLTexture> texture;
-    ObjMaterial material;
     mat4x4 model_transform;
-    GLUniformLocations uniformLocs;
 
     RenderableThing(
         std::shared_ptr<GLMesh> mesh,
-        std::shared_ptr<GLTexture> texture,
-        ObjMaterial material,
-        mat4x4 model_transform,
-        GLUniformLocations uniformLocs
-    ): mesh(mesh), texture(texture), material(material), uniformLocs(uniformLocs) {
+        mat4x4 model_transform
+    ): mesh(mesh) {
         memcpy(this->model_transform, model_transform, sizeof(mat4x4));
     }
 };
 
+class Entity {
+public:
+    Entity(Vec3 pos, quat rot, float scale);
+    void convert_to_renderables(std::vector<RenderableThing>& output);
+    std::vector<std::shared_ptr<GLMesh>> meshes;
+
+private:
+    Vec3 pos;
+    quat rot;
+    float scale;
+};
+
 // change objloader to make a vector of meshes
+
+/* Entity:
+ * make entity in 225 loop instead of renderable thing. Then make another loop after to convert to renderables
+ *
+*/

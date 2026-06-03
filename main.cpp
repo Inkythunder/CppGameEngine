@@ -87,22 +87,8 @@ int get_shader_compile_error(GLuint shader) {
     return 1;
 }
 
-void GLdraw_call(RenderableThing& thing) {
-    thing.mesh->bind();
-    thing.texture->bind();
-
-    glUniform3f(
-        thing.uniformLocs.ka_location,
-        thing.material.light_ambient.x,
-        thing.material.light_ambient.y,
-        thing.material.light_ambient.z
-    );
-    glUniform3f(
-        thing.uniformLocs.kd_location,
-        thing.material.light_diffuse.x,
-        thing.material.light_diffuse.y,
-        thing.material.light_diffuse.z
-    );
+static void GLdraw_call(RenderableThing& thing, GLUniformLocations& uniforms) { // add parameter here for a const reference to uniformLocs
+    thing.mesh->bind(uniforms);
 
     glDrawArrays(GL_TRIANGLES, 0, thing.mesh->get_vertex_count());
 }
@@ -220,36 +206,29 @@ int main(int argc, char* argv[]) {
     // Accept fragment if it closer to the camera than the former one
     glDepthFunc(GL_LESS);
 
-    mat4x4 m, vp;
-    // makes m an identity matrix which is all 0s except for a diagonal of 1s
-    mat4x4_identity(m);
+    mat4x4 vp;
 
-    mat4x4_translate_in_place(m, offset.x, offset.y - 1, -5.f);
-
-    m[0][0] /= 300.0;
-    m[1][1] /= 300.0;
-    m[2][2] /= 300.0;
-    //mat4x4_rotate_Y(m, m, (float) glfwGetTime()/2);
-    mat4x4_rotate_X(m, m, -1.2f);
-
+    std::map<uint32_t, Entity> entities;
     std::vector<RenderableThing> list_of_things;
 
-    for(std::map<std::string, ObjMesh>::iterator it = model.meshes.begin(); it != model.meshes.end(); it++) {
+    for(uint32_t i = 0; i < 2; i++) {
+        Vec3 pos(1.0 * i - 0.5, 0, -5);
+        quat rot;
+        quat_identity(rot);
+        Entity entity(pos, rot, 1.0/300);
 
-        ObjMaterial& material = materials[it->second.material_name];
-        std::shared_ptr<GLTexture> texture = std::make_shared<GLTexture>(material.diffuse_texture);
+        for(std::map<std::string, ObjMesh>::iterator it = model.meshes.begin(); it != model.meshes.end(); it++) {
 
-        std::shared_ptr<GLMesh> mesh = std::make_shared<GLMesh>(it->second.vertices.data(), it->second.vertices.size(), attribLocs);
+            ObjMaterial& material = materials[it->second.material_name];
+            std::shared_ptr<GLTexture> texture = std::make_shared<GLTexture>(material.diffuse_texture);
 
-        RenderableThing thing(
-            mesh,
-            texture,
-            material,
-            m,
-            uniformLocs
-        );
+            std::shared_ptr<GLMaterial> glMat = std::make_shared<GLMaterial>(std::move(texture), material.light_diffuse, material.light_ambient);
 
-        list_of_things.push_back(thing);
+            std::shared_ptr<GLMesh> mesh = std::make_shared<GLMesh>(it->second.vertices.data(), it->second.vertices.size(), attribLocs, glMat);
+
+            entity.meshes.push_back(mesh);
+        }
+        entities.insert({i, entity});
     }
 
     while (!glfwWindowShouldClose(window)) {
@@ -272,11 +251,16 @@ int main(int argc, char* argv[]) {
 
         // setting the uniform variable mvp_location to mvp(ram)
         glUniformMatrix4fv(vp_location, 1, GL_FALSE, (const GLfloat*) &vp);
-        glUniformMatrix4fv(model_location, 1, GL_FALSE, (const GLfloat*) &m);
+
+        list_of_things.clear();
+        for(std::map<uint32_t, Entity>::iterator it = entities.begin(); it != entities.end(); it++) {
+            it->second.convert_to_renderables(list_of_things);
+        }
 
         for(size_t i = 0; i < list_of_things.size(); i++) {
 
-            GLdraw_call(list_of_things[i]);
+            glUniformMatrix4fv(model_location, 1, GL_FALSE, (const GLfloat*) &list_of_things[i].model_transform);
+            GLdraw_call(list_of_things[i], uniformLocs);
         }
 
         GLenum err = glGetError();
