@@ -2,7 +2,7 @@
 
 #include <glad/gl.h>
 #include <filesystem>
-#include "utils.h"
+#include "engine.h"
 #include "obj_loader.h"
 
 struct GLAttributeLocations {
@@ -15,16 +15,29 @@ struct GLAttributeLocations {
         GLint vtex_location,
         GLint vnorm_location
     ): vpos_location(vpos_location), vtex_location(vtex_location), vnorm_location(vnorm_location) {}
+
+    GLAttributeLocations() {}
 };
 
 struct GLUniformLocations {
     GLint ka_location;
     GLint kd_location;
+    GLint textureless_location;
+    GLint vpoint_location;
+    GLint vp_location;
+    GLint model_location;
 
     GLUniformLocations (
-        GLint ka_location,
-        GLint kd_location
-    ): ka_location(ka_location), kd_location(kd_location) {}
+        GLuint program
+    ):
+        ka_location(glGetUniformLocation(program, "ka")),
+        kd_location(glGetUniformLocation(program, "kd")),
+        textureless_location(glGetUniformLocation(program, "textureless")),
+        vpoint_location(glGetUniformLocation(program, "vPoint")),
+        vp_location(glGetUniformLocation(program, "VP")),
+        model_location(glGetUniformLocation(program, "model")) {}
+
+    GLUniformLocations() {}
 };
 
 class GLTexture {
@@ -46,20 +59,25 @@ public:
     void bind(GLUniformLocations& uniforms);
 
     GLMaterial(
-        std::shared_ptr<GLTexture> texture,
+        std::optional<std::shared_ptr<GLTexture>> texture,
         Vec3 kd,
         Vec3 ka
     ): texture(texture), kd(kd), ka(ka) {}
 
 private:
-    std::shared_ptr<GLTexture> texture;
+    std::optional<std::shared_ptr<GLTexture>> texture;
     Vec3 kd;
     Vec3 ka;
 };
 
 class GLMesh {
 public:
-    GLMesh(const ObjVertex* vertices, size_t count, GLAttributeLocations attribLocs, std::shared_ptr<GLMaterial> material);
+    GLMesh(
+        const ObjVertex* vertices,
+        size_t count,
+        GLAttributeLocations attribLocs,
+        std::shared_ptr<GLMaterial> material
+    );
     void bind(GLUniformLocations& uniforms);
     ~GLMesh();
     GLMesh(const GLMesh&) = delete;
@@ -88,11 +106,17 @@ struct RenderableThing {
     }
 };
 
+struct GLModel {
+public:
+    std::vector<std::shared_ptr<GLMesh>> meshes;
+    Vec3 dimensions;
+};
+
 class Entity {
 public:
-    Entity(Vec3 pos, quat rot, float scale);
+    Entity(Vec3 pos, quat rot, float scale, std::shared_ptr<GLModel> model);
     void convert_to_renderables(std::vector<RenderableThing>& output);
-    std::vector<std::shared_ptr<GLMesh>> meshes;
+    std::shared_ptr<GLModel> model;
 
 private:
     Vec3 pos;
@@ -102,7 +126,14 @@ private:
 
 // change objloader to make a vector of meshes
 
-/* Entity:
- * make entity in 225 loop instead of renderable thing. Then make another loop after to convert to renderables
+/* 1. Unbind textures when there is no texture for a material
+ * 2. When no texture bound, texColour needs to be white not black
+ * To do this, have a uniform called textureless which is a float: 0 = texture, 1 = no texture
+ * add textureless to texColour.rgb (done)
+ * 3. in ObjMaterial, wrap path in std::option
+ * if path is empty string, don't create GLTexture
+ * 4. wrap texture in GLMaterial parameters in option to make optional
  *
+ *
+ * obj parser
 */

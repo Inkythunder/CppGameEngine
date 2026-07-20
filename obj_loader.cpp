@@ -1,4 +1,5 @@
 #include "obj_loader.h"
+#include "engine.h"
 #include <fstream>
 
 ObjMaterial::ObjMaterial()
@@ -83,6 +84,7 @@ void loadMaterialFile(const std::filesystem::path& filename, std::map<std::strin
     ObjMaterial new_material;
     bool new_material_is_set = false;
 
+    std::cout << "Processing material file..." << std::endl;
     while(getline(file, line)) {
 
         line = remove_spaces(line);
@@ -132,6 +134,7 @@ void loadMaterialFile(const std::filesystem::path& filename, std::map<std::strin
     if(new_material_is_set) {
         materials.insert({new_material.name, new_material});
     }
+    std::cout << "Finished loading material :3" << std::endl;
 }
 
 ObjModel loadObjFile(const std::filesystem::path& filename, std::map<std::string, ObjMaterial>& materials) {
@@ -153,6 +156,10 @@ ObjModel loadObjFile(const std::filesystem::path& filename, std::map<std::string
     std::vector<Vec3> normals;
     ObjMesh* current_mesh_ptr = nullptr;
 
+    Vec3 max_size;
+    Vec3 min_size;
+
+    std::cout << "Processing object file..." << std::endl;
     while(getline(file, line)) {
 
         line = remove_spaces(line);
@@ -164,6 +171,8 @@ ObjModel loadObjFile(const std::filesystem::path& filename, std::map<std::string
 
         if(key == "mtllib") {
             const std::filesystem::path mtl_file = parent_path / value;
+            std::cout << "mtllib = " << value << std::endl;
+            std::cout << "mtl_file = " << mtl_file << std::endl;
             loadMaterialFile(mtl_file, materials);
 
         } /*else if(key == "g") {
@@ -225,6 +234,9 @@ ObjModel loadObjFile(const std::filesystem::path& filename, std::map<std::string
                 }
 
                 face_vertices.push_back(vertex);
+
+                max_size = max_size.max(vertex.position);
+                min_size = min_size.min(vertex.position);
             }
 
             for(size_t i = 0; i + 2 < face_vertices.size(); i++) {
@@ -235,5 +247,8 @@ ObjModel loadObjFile(const std::filesystem::path& filename, std::map<std::string
         }
     }
 
+    std::cout << "Finished loading object :3" << std::endl;
+
+    model.dimensions = max_size - min_size;
     return model;
 }

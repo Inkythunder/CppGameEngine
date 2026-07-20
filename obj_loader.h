@@ -1,7 +1,7 @@
 #pragma once
 
 #include "linmath.h"
-#include "utils.h"
+#include "engine.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -21,7 +21,7 @@ struct ObjMaterial {
     Vec3 light_diffuse;
     Vec3 light_specular;
     float specular_exponent;
-    std::filesystem::path diffuse_texture;
+    std::optional<std::filesystem::path> diffuse_texture;
 
     ObjMaterial();
 };
@@ -33,6 +33,7 @@ struct ObjMesh {
 
 struct ObjModel {
     std::map<std::string, ObjMesh> meshes;
+    Vec3 dimensions;
 };
 
 ObjModel loadObjFile(

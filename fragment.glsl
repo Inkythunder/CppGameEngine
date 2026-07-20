@@ -9,10 +9,11 @@ uniform sampler2D ourTexture;
 uniform vec3 vPoint;
 uniform vec3 ka;
 uniform vec3 kd;
+uniform float textureless;
 
 void main()
 {
-    vec4 texColour = texture(ourTexture, TexCoord);
+    vec4 texColour = texture(ourTexture, TexCoord) + vec4(textureless, textureless, textureless, 0.0);
 
     vec3 norm = normalize(normal);
     vec3 lightDir = normalize(vPoint - fragPos);

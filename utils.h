@@ -4,45 +4,6 @@
 #include <cstdint>
 #include <cstring>
 
-
-struct Vec3 {
-    float x;
-    float y;
-    float z;
-};
-
-struct Vec2 {
-    float x;
-    float y;
-
-    Vec2 operator*(float scalar) {
-        return Vec2(x * scalar, y * scalar);
-    }
-
-    Vec2 operator/(float scalar) {
-        return Vec2(x / scalar, y / scalar);
-    }
-
-    Vec2 operator+(Vec2 other) {
-        return Vec2(x + other.x, y + other.y);
-    }
-
-    Vec2 operator-(Vec2 other) {
-        return Vec2(x - other.x, y - other.y);
-    }
-
-    Vec2 operator*(Vec2 other) {
-        return Vec2(x * other.x, y * other.y);
-    }
-
-    Vec2(
-        float x,
-        float y
-    ): x(x), y(y) {}
-
-    Vec2(): x(0.0), y(0.0) {}
-};
-
 struct loaded_image {
     size_t width;
     size_t height;

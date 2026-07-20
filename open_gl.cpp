@@ -54,7 +54,13 @@ void GLMaterial::bind(GLUniformLocations& uniforms) {
         this->kd.y,
         this->kd.z
     );
-    texture->bind();
+    if(texture) {
+        (*texture)->bind();
+        glUniform1f(uniforms.textureless_location, 0);
+    } else {
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glUniform1f(uniforms.textureless_location, 1);
+    }
 }
 
 GLMesh::GLMesh(
@@ -100,8 +106,9 @@ GLMesh::~GLMesh() {
 Entity::Entity(
     Vec3 pos,
     quat rot,
-    float scale
-): pos(pos), scale(scale) {
+    float scale,
+    std::shared_ptr<GLModel> model
+): pos(pos), scale(scale), model(model) {
     memcpy(this->rot, rot, sizeof(quat));
 }
 
@@ -114,9 +121,9 @@ void Entity::convert_to_renderables(std::vector<RenderableThing>& output) {
     m[1][1] *= scale;
     m[2][2] *= scale;
 
-    for(size_t i = 0; i < this->meshes.size(); i++) {
+    for(size_t i = 0; i < this->model->meshes.size(); i++) {
 
-        RenderableThing thing(this->meshes[i], m);
+        RenderableThing thing(this->model->meshes[i], m);
         output.push_back(thing);
     }
 }
