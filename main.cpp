@@ -15,6 +15,8 @@
 #include "open_gl.h"
 #include "engine.h"
 
+static Vec3 camera_position;
+static quat camera_angle = {0.f, 0.f, 0.f, 1.f};
 
 class MyCallbacks : public EngineCallbacks {
 public:
@@ -24,6 +26,30 @@ public:
     virtual void on_key_event(int key, int action) override {
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
             engine_stop();
+        if (key == GLFW_KEY_W && action == GLFW_PRESS) {
+            camera_position = camera_position + Vec3(0, 0, -0.1);
+            engine_set_camera(camera_position, camera_angle);
+        }
+        if (key == GLFW_KEY_A && action == GLFW_PRESS) {
+            camera_position = camera_position + Vec3(-0.1, 0, 0);
+            engine_set_camera(camera_position, camera_angle);
+        }
+        if (key == GLFW_KEY_S && action == GLFW_PRESS) {
+            camera_position = camera_position + Vec3(0, 0, 0.1);
+            engine_set_camera(camera_position, camera_angle);
+        }
+        if (key == GLFW_KEY_D && action == GLFW_PRESS) {
+            camera_position = camera_position + Vec3(0.1, 0, 0);
+            engine_set_camera(camera_position, camera_angle);
+        }
+        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+            camera_position = camera_position + Vec3(0, 0.1, 0);
+            engine_set_camera(camera_position, camera_angle);
+        }
+        if (key == GLFW_KEY_LEFT_CONTROL && action == GLFW_PRESS) {
+            camera_position = camera_position + Vec3(0, -0.1, 0);
+            engine_set_camera(camera_position, camera_angle);
+        }
     }
     virtual void on_mouse_move() {
 

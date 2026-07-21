@@ -30,6 +30,11 @@ static ModelId current_model_id = 0;
 static EntityId current_entity_id = 0;
 static std::map<std::string, ObjMaterial> materials;
 
+static Vec3 camera_position;
+static quat camera_angle = {0.f, 0.f, 0.f, 1.f};
+
+static EngineCallbacks* engine_callbacks = nullptr;
+
 static int get_shader_compile_error(GLuint shader) {
     GLint isCompiled = 0;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
@@ -75,6 +80,11 @@ static void error_callback(int error, const char* description) {
     std::cerr << "Error: " << description << std::endl;
 }
 
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+
+    engine_callbacks->on_key_event(key, action);
+}
+
 static void GLdraw_call(RenderableThing& thing, GLUniformLocations& uniforms) { // add parameter here for a const reference to uniformLocs
     thing.mesh->bind(uniforms);
 
@@ -88,6 +98,8 @@ void engine_start(uint16_t window_width, uint16_t window_height, EngineCallbacks
     const std::string vertex_shader_text = get_shader_content("vertex.glsl");
     const std::string fragment_shader_text = get_shader_content("fragment.glsl");
 
+    engine_callbacks = &callbacks;
+
     glfwSetErrorCallback(error_callback);
     if (!glfwInit()) exit(EXIT_FAILURE);
 
@@ -95,13 +107,14 @@ void engine_start(uint16_t window_width, uint16_t window_height, EngineCallbacks
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    window = glfwCreateWindow(window_width, window_width, "OpenGL C++", nullptr, nullptr);
+    window = glfwCreateWindow(window_width, window_height, "OpenGL C++", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
 
     glfwMakeContextCurrent(window);
+    glfwSetKeyCallback(window, key_callback);
     gladLoadGL(glfwGetProcAddress);
     glfwSwapInterval(1);
 
@@ -226,7 +239,8 @@ void engine_entity_set_rotation(EntityId entity, quat rotation) {
 
 void engine_set_camera(Vec3 position, quat rotation) {
 
-
+    camera_position = position;
+    memcpy(camera_angle, rotation, sizeof(quat));
 }
 
 void engine_run_loop() {
@@ -249,10 +263,19 @@ void engine_run_loop() {
         // viewport is the rectangle that is actually displayed on the screen
         glViewport(0, 0, width, height);
         // Clear the screen
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // perspective projection
-        mat4x4_perspective(vp, 1.f, ratio, 0.1f, 100.f);
+        // calculate camera location
+        mat4x4 projection, view;
+        mat4x4_perspective(projection, 1.f, ratio, 0.1f, 100.f);
+
+        quat inverse_rotation;
+        quat_conj(inverse_rotation, camera_angle);
+        mat4x4_from_quat(view, inverse_rotation);
+        mat4x4_translate_in_place(view, -camera_position.x, -camera_position.y, -camera_position.z);
+
+        mat4x4_mul(vp, projection, view);
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // setting the uniform variable mvp_location to mvp(ram)
         glUniformMatrix4fv(uniformLocs.vp_location, 1, GL_FALSE, (const GLfloat*) &vp);
