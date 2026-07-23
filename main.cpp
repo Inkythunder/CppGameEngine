@@ -11,43 +11,101 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <set>
 #include "obj_loader.h"
 #include "open_gl.h"
 #include "engine.h"
 
-static Vec3 camera_position;
+static const float speed = 0.1f;
 static quat camera_angle = {0.f, 0.f, 0.f, 1.f};
 
 class MyCallbacks : public EngineCallbacks {
 public:
     virtual void on_frame_start() {
+        Vec3 move;
 
+        if(engine_is_key_down(GLFW_KEY_W)) move.z -= speed;
+        if (engine_is_key_down(GLFW_KEY_A)) move.x -= speed;
+        if (engine_is_key_down(GLFW_KEY_S)) move.z += speed;
+        if (engine_is_key_down(GLFW_KEY_D)) move.x += speed;
+        if (engine_is_key_down(GLFW_KEY_SPACE)) move.y += speed;
+        if (engine_is_key_down(GLFW_KEY_LEFT_CONTROL)) move.y -= speed;
+
+        camera_position = camera_position + move;
+        engine_set_camera(camera_position, camera_angle);
     }
     virtual void on_key_event(int key, int action) override {
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
             engine_stop();
+
+        // WASD Movement
         if (key == GLFW_KEY_W && action == GLFW_PRESS) {
-            camera_position = camera_position + Vec3(0, 0, -0.1);
-            engine_set_camera(camera_position, camera_angle);
+            keys_pressed.insert(GLFW_KEY_W);
+        }
+        if (key == GLFW_KEY_W && action == GLFW_RELEASE) {
+            keys_pressed.erase(GLFW_KEY_W);
         }
         if (key == GLFW_KEY_A && action == GLFW_PRESS) {
-            camera_position = camera_position + Vec3(-0.1, 0, 0);
-            engine_set_camera(camera_position, camera_angle);
+            keys_pressed.insert(GLFW_KEY_A);
+        }
+        if (key == GLFW_KEY_A && action == GLFW_RELEASE) {
+            keys_pressed.erase(GLFW_KEY_A);
         }
         if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-            camera_position = camera_position + Vec3(0, 0, 0.1);
-            engine_set_camera(camera_position, camera_angle);
+            keys_pressed.insert(GLFW_KEY_S);
+        }
+        if (key == GLFW_KEY_S && action == GLFW_RELEASE) {
+            keys_pressed.erase(GLFW_KEY_S);
         }
         if (key == GLFW_KEY_D && action == GLFW_PRESS) {
-            camera_position = camera_position + Vec3(0.1, 0, 0);
-            engine_set_camera(camera_position, camera_angle);
+            keys_pressed.insert(GLFW_KEY_D);
+        }
+        if (key == GLFW_KEY_D && action == GLFW_RELEASE) {
+            keys_pressed.erase(GLFW_KEY_D);
         }
         if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-            camera_position = camera_position + Vec3(0, 0.1, 0);
-            engine_set_camera(camera_position, camera_angle);
+            keys_pressed.insert(GLFW_KEY_SPACE);
+        }
+        if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE) {
+            keys_pressed.erase(GLFW_KEY_SPACE);
         }
         if (key == GLFW_KEY_LEFT_CONTROL && action == GLFW_PRESS) {
-            camera_position = camera_position + Vec3(0, -0.1, 0);
+            keys_pressed.insert(GLFW_KEY_LEFT_CONTROL);
+        }
+        if (key == GLFW_KEY_LEFT_CONTROL && action == GLFW_RELEASE) {
+            keys_pressed.erase(GLFW_KEY_LEFT_CONTROL);
+        }
+
+        if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
+
+            quat angle, result;
+            quat_rotate(angle, 0.05f, (vec3){1, 0, 0});
+            quat_mul(result, camera_angle, angle);
+            memcpy(camera_angle, result, sizeof(quat));
+            engine_set_camera(camera_position, camera_angle);
+        }
+        if (key == GLFW_KEY_DOWN && action == GLFW_PRESS) {
+
+            quat angle, result;
+            quat_rotate(angle, -0.05f, (vec3){1, 0, 0});
+            quat_mul(result, camera_angle, angle);
+            memcpy(camera_angle, result, sizeof(quat));
+            engine_set_camera(camera_position, camera_angle);
+        }
+        if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
+
+            quat angle, result;
+            quat_rotate(angle, 0.05f, (vec3){0, 1, 0});
+            quat_mul(result, camera_angle, angle);
+            memcpy(camera_angle, result, sizeof(quat));
+            engine_set_camera(camera_position, camera_angle);
+        }
+        if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+
+            quat angle, result;
+            quat_rotate(angle, -0.05f, (vec3){0, 1, 0});
+            quat_mul(result, camera_angle, angle);
+            memcpy(camera_angle, result, sizeof(quat));
             engine_set_camera(camera_position, camera_angle);
         }
     }
@@ -57,6 +115,10 @@ public:
     virtual void on_mouse_button_change() {
 
     }
+
+private:
+    std::set<int> keys_pressed = {};
+    Vec3 camera_position;
 };
 
 int main(int argc, char* argv[]) {

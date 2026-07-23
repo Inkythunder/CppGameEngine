@@ -103,6 +103,8 @@ void engine_entity_set_rotation(EntityId entity, quat rotation);
 
 void engine_set_camera(Vec3 position, quat rotation);
 
+bool engine_is_key_down(int key);
+
 void engine_run_loop();
 
 void engine_stop();

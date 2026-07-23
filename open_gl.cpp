@@ -114,16 +114,23 @@ Entity::Entity(
 
 void Entity::convert_to_renderables(std::vector<RenderableThing>& output) {
 
-    mat4x4 m;
-    mat4x4_from_quat(m, this->rot);
-    mat4x4_translate_in_place(m, this->pos.x, this->pos.y, this->pos.z);
-    m[0][0] *= scale;
-    m[1][1] *= scale;
-    m[2][2] *= scale;
+    mat4x4 m, rotation;
+    mat4x4_from_quat(rotation, this->rot);
+    mat4x4_translate(m, this->pos.x, this->pos.y, this->pos.z);
+    mat4x4_mul(m, m, rotation);
+    mat4x4_scale_aniso(m, m, scale, scale, scale);
 
     for(size_t i = 0; i < this->model->meshes.size(); i++) {
 
         RenderableThing thing(this->model->meshes[i], m);
         output.push_back(thing);
     }
+}
+
+void Entity::set_pos(Vec3 pos) {
+    this->pos = pos;
+}
+
+void Entity::set_rot(quat rot) {
+    memcpy(this->rot, rot, sizeof(quat));
 }

@@ -116,6 +116,8 @@ class Entity {
 public:
     Entity(Vec3 pos, quat rot, float scale, std::shared_ptr<GLModel> model);
     void convert_to_renderables(std::vector<RenderableThing>& output);
+    void set_pos(Vec3 pos);
+    void set_rot(quat rot);
     std::shared_ptr<GLModel> model;
 
 private:

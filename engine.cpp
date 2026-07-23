@@ -229,18 +229,22 @@ EntityId engine_entity_create(ModelId model, Vec3 position, quat rotation) {
 
 void engine_entity_set_position(EntityId entity, Vec3 position) {
 
-
+    entities.at(entity).set_pos(position);
 }
 
 void engine_entity_set_rotation(EntityId entity, quat rotation) {
 
-
+    entities.at(entity).set_rot(rotation);
 }
 
 void engine_set_camera(Vec3 position, quat rotation) {
 
     camera_position = position;
     memcpy(camera_angle, rotation, sizeof(quat));
+}
+
+bool engine_is_key_down(int key) {
+    return glfwGetKey(window, key) == GLFW_PRESS;
 }
 
 void engine_run_loop() {
@@ -251,6 +255,13 @@ void engine_run_loop() {
     mat4x4 vp;
 
     while (!glfwWindowShouldClose(window)) {
+        engine_callbacks->on_frame_start();
+
+        double now = glfwGetTime();
+        quat spin;
+        quat_rotate(spin, (90.0f * (3.141f / 180.0f) * now), (vec3){0, 1, 0});
+        engine_entity_set_rotation(1, spin);
+
         point_light[0] = (float)cos(glfwGetTime()) * 50.f;
         point_light[2] = (float)sin(glfwGetTime()) * 50.f;
         glUniform3f(uniformLocs.vpoint_location, point_light[0], point_light[1], point_light[2]);
