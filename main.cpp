@@ -38,13 +38,19 @@ public:
         quat_mul_vec3(move, camera_angle, move);
 
         // Arrow key camera control
-        const float look_speed = 0.05f;
+        const float look_speed = 0.003f;
         const float pitch_limit = 1.55334f;
 
-        if(engine_is_key_down(GLFW_KEY_UP)) camera_pitch += look_speed;
-        if(engine_is_key_down(GLFW_KEY_DOWN)) camera_pitch -= look_speed;
-        if(engine_is_key_down(GLFW_KEY_LEFT)) camera_yaw += look_speed;
-        if(engine_is_key_down(GLFW_KEY_RIGHT)) camera_yaw -= look_speed;
+        Vec2 mouse = engine_get_mouse_position();
+        if(first_mouse) {
+            last_mouse = mouse;
+            first_mouse = false;
+        }
+        Vec2 delta = mouse - last_mouse;
+        last_mouse = mouse;
+
+        camera_yaw -= delta.x * look_speed;
+        camera_pitch -= delta.y * look_speed;
 
         if(camera_pitch > pitch_limit) camera_pitch = pitch_limit;
         if(camera_pitch < -pitch_limit) camera_pitch = -pitch_limit;
@@ -76,6 +82,8 @@ public:
 private:
     std::set<int> keys_pressed = {};
     Vec3 camera_position;
+    Vec2 last_mouse;
+    bool first_mouse = true;
 };
 
 int main(int argc, char* argv[]) {

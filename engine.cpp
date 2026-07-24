@@ -115,6 +115,8 @@ void engine_start(uint16_t window_width, uint16_t window_height, EngineCallbacks
 
     glfwMakeContextCurrent(window);
     glfwSetKeyCallback(window, key_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (glfwRawMouseMotionSupported()) glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
     gladLoadGL(glfwGetProcAddress);
     glfwSwapInterval(1);
 
@@ -245,6 +247,12 @@ void engine_set_camera(Vec3 position, quat rotation) {
 
 bool engine_is_key_down(int key) {
     return glfwGetKey(window, key) == GLFW_PRESS;
+}
+
+Vec2 engine_get_mouse_position() {
+    double x, y;
+    glfwGetCursorPos(window, &x, &y);
+    return Vec2((float)x, (float)y);
 }
 
 void engine_run_loop() {

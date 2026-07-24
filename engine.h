@@ -106,6 +106,8 @@ void engine_set_camera(Vec3 position, quat rotation);
 
 bool engine_is_key_down(int key);
 
+Vec2 engine_get_mouse_position();
+
 void engine_run_loop();
 
 void engine_stop();
