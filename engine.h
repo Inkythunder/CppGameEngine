@@ -21,6 +21,7 @@ struct Vec3 {
     Vec3(): x(0.0), y(0.0), z(0.0) {}
 
     Vec3(float x, float y, float z): x(x), y(y), z(z) {}
+    explicit Vec3(float* values): x(values[0]), y(values[1]), z(values[2]) {}
 
     Vec3 max(const Vec3& other) {
         return Vec3(

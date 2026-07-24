@@ -19,94 +19,51 @@
 static const float speed = 0.1f;
 static quat camera_angle = {0.f, 0.f, 0.f, 1.f};
 
+static float camera_yaw = 0.f;
+static float camera_pitch = 0.f;
+
 class MyCallbacks : public EngineCallbacks {
 public:
     virtual void on_frame_start() {
-        Vec3 move;
+        vec3 move = {0, 0, 0};
 
-        if(engine_is_key_down(GLFW_KEY_W)) move.z -= speed;
-        if (engine_is_key_down(GLFW_KEY_A)) move.x -= speed;
-        if (engine_is_key_down(GLFW_KEY_S)) move.z += speed;
-        if (engine_is_key_down(GLFW_KEY_D)) move.x += speed;
-        if (engine_is_key_down(GLFW_KEY_SPACE)) move.y += speed;
-        if (engine_is_key_down(GLFW_KEY_LEFT_CONTROL)) move.y -= speed;
+        // WASD Movement
+        if(engine_is_key_down(GLFW_KEY_W)) move[2] -= speed;
+        if(engine_is_key_down(GLFW_KEY_A)) move[0] -= speed;
+        if(engine_is_key_down(GLFW_KEY_S)) move[2] += speed;
+        if(engine_is_key_down(GLFW_KEY_D)) move[0] += speed;
+        if(engine_is_key_down(GLFW_KEY_SPACE)) move[1] += speed;
+        if(engine_is_key_down(GLFW_KEY_LEFT_CONTROL)) move[1] -= speed;
 
-        camera_position = camera_position + move;
+        quat_mul_vec3(move, camera_angle, move);
+
+        // Arrow key camera control
+        const float look_speed = 0.05f;
+        const float pitch_limit = 1.55334f;
+
+        if(engine_is_key_down(GLFW_KEY_UP)) camera_pitch += look_speed;
+        if(engine_is_key_down(GLFW_KEY_DOWN)) camera_pitch -= look_speed;
+        if(engine_is_key_down(GLFW_KEY_LEFT)) camera_yaw += look_speed;
+        if(engine_is_key_down(GLFW_KEY_RIGHT)) camera_yaw -= look_speed;
+
+        if(camera_pitch > pitch_limit) camera_pitch = pitch_limit;
+        if(camera_pitch < -pitch_limit) camera_pitch = -pitch_limit;
+
+        quat yaw_q, pitch_q;
+        quat_rotate(yaw_q, camera_yaw, (vec3){0, 1, 0});
+        quat_rotate(pitch_q, camera_pitch, (vec3){1, 0, 0});
+        quat_mul(camera_angle, yaw_q, pitch_q);
+
+        camera_position = camera_position + Vec3(move);
         engine_set_camera(camera_position, camera_angle);
     }
     virtual void on_key_event(int key, int action) override {
-        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
             engine_stop();
-
-        // WASD Movement
-        if (key == GLFW_KEY_W && action == GLFW_PRESS) {
-            keys_pressed.insert(GLFW_KEY_W);
-        }
-        if (key == GLFW_KEY_W && action == GLFW_RELEASE) {
-            keys_pressed.erase(GLFW_KEY_W);
-        }
-        if (key == GLFW_KEY_A && action == GLFW_PRESS) {
-            keys_pressed.insert(GLFW_KEY_A);
-        }
-        if (key == GLFW_KEY_A && action == GLFW_RELEASE) {
-            keys_pressed.erase(GLFW_KEY_A);
-        }
-        if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-            keys_pressed.insert(GLFW_KEY_S);
-        }
-        if (key == GLFW_KEY_S && action == GLFW_RELEASE) {
-            keys_pressed.erase(GLFW_KEY_S);
-        }
-        if (key == GLFW_KEY_D && action == GLFW_PRESS) {
-            keys_pressed.insert(GLFW_KEY_D);
-        }
-        if (key == GLFW_KEY_D && action == GLFW_RELEASE) {
-            keys_pressed.erase(GLFW_KEY_D);
-        }
-        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-            keys_pressed.insert(GLFW_KEY_SPACE);
-        }
-        if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE) {
-            keys_pressed.erase(GLFW_KEY_SPACE);
-        }
-        if (key == GLFW_KEY_LEFT_CONTROL && action == GLFW_PRESS) {
-            keys_pressed.insert(GLFW_KEY_LEFT_CONTROL);
-        }
-        if (key == GLFW_KEY_LEFT_CONTROL && action == GLFW_RELEASE) {
-            keys_pressed.erase(GLFW_KEY_LEFT_CONTROL);
-        }
-
-        if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
-
-            quat angle, result;
-            quat_rotate(angle, 0.05f, (vec3){1, 0, 0});
-            quat_mul(result, camera_angle, angle);
-            memcpy(camera_angle, result, sizeof(quat));
-            engine_set_camera(camera_position, camera_angle);
-        }
-        if (key == GLFW_KEY_DOWN && action == GLFW_PRESS) {
-
-            quat angle, result;
-            quat_rotate(angle, -0.05f, (vec3){1, 0, 0});
-            quat_mul(result, camera_angle, angle);
-            memcpy(camera_angle, result, sizeof(quat));
-            engine_set_camera(camera_position, camera_angle);
-        }
-        if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
-
-            quat angle, result;
-            quat_rotate(angle, 0.05f, (vec3){0, 1, 0});
-            quat_mul(result, camera_angle, angle);
-            memcpy(camera_angle, result, sizeof(quat));
-            engine_set_camera(camera_position, camera_angle);
-        }
-        if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
-
-            quat angle, result;
-            quat_rotate(angle, -0.05f, (vec3){0, 1, 0});
-            quat_mul(result, camera_angle, angle);
-            memcpy(camera_angle, result, sizeof(quat));
-            engine_set_camera(camera_position, camera_angle);
+        } else if(action == GLFW_PRESS) {
+            keys_pressed.insert(key);
+        } else if(action == GLFW_RELEASE) {
+            keys_pressed.erase(key);
         }
     }
     virtual void on_mouse_move() {
