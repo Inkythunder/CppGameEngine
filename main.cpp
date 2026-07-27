@@ -17,7 +17,7 @@
 #include "engine.h"
 
 static const float speed = 0.1f;
-static quat camera_angle = {0.f, 0.f, 0.f, 1.f};
+static glm::quat camera_angle(1.f, 0.f, 0.f, 0.f);
 
 static float camera_yaw = 0.f;
 static float camera_pitch = 0.f;
@@ -25,7 +25,12 @@ static float camera_pitch = 0.f;
 class MyCallbacks : public EngineCallbacks {
 public:
     virtual void on_frame_start() {
-        vec3 move = {0, 0, 0};
+
+        double now = glfwGetTime();
+        glm::quat spin = glm::angleAxis((float)(90.0f * (3.141f / 180.0f) * now), glm::vec3(0,1,0));
+        engine_entity_set_rotation(1, spin);
+
+        glm::vec3 move(0.f);
 
         // WASD Movement
         if(engine_is_key_down(GLFW_KEY_W)) move[2] -= speed;
@@ -35,18 +40,18 @@ public:
         if(engine_is_key_down(GLFW_KEY_SPACE)) move[1] += speed;
         if(engine_is_key_down(GLFW_KEY_LEFT_CONTROL)) move[1] -= speed;
 
-        quat_mul_vec3(move, camera_angle, move);
+        move = camera_angle * move;
 
         // Arrow key camera control
         const float look_speed = 0.003f;
         const float pitch_limit = 1.55334f;
 
-        Vec2 mouse = engine_get_mouse_position();
+        glm::vec2 mouse = engine_get_mouse_position();
         if(first_mouse) {
             last_mouse = mouse;
             first_mouse = false;
         }
-        Vec2 delta = mouse - last_mouse;
+        glm::vec2 delta = mouse - last_mouse;
         last_mouse = mouse;
 
         camera_yaw -= delta.x * look_speed;
@@ -55,12 +60,11 @@ public:
         if(camera_pitch > pitch_limit) camera_pitch = pitch_limit;
         if(camera_pitch < -pitch_limit) camera_pitch = -pitch_limit;
 
-        quat yaw_q, pitch_q;
-        quat_rotate(yaw_q, camera_yaw, (vec3){0, 1, 0});
-        quat_rotate(pitch_q, camera_pitch, (vec3){1, 0, 0});
-        quat_mul(camera_angle, yaw_q, pitch_q);
+        glm::quat yaw_q = glm::angleAxis(camera_yaw, glm::vec3(0, 1, 0));
+        glm::quat pitch_q = glm::angleAxis(camera_pitch, glm::vec3(1, 0, 0));
+        camera_angle = yaw_q * pitch_q;
 
-        camera_position = camera_position + Vec3(move);
+        camera_position += move;
         engine_set_camera(camera_position, camera_angle);
     }
     virtual void on_key_event(int key, int action) override {
@@ -81,8 +85,8 @@ public:
 
 private:
     std::set<int> keys_pressed = {};
-    Vec3 camera_position;
-    Vec2 last_mouse;
+    glm::vec3 camera_position{0.0f};
+    glm::vec2 last_mouse{0.0f};
     bool first_mouse = true;
 };
 
@@ -100,9 +104,8 @@ int main(int argc, char* argv[]) {
             std::cout << "argv[" << i << "] = " << argv[1] << std::endl;
             ModelId model_id = engine_model_load(argv[i]);
 
-            Vec3 pos(i - 1 , 0, -5);
-            quat rot;
-            quat_identity(rot);
+            glm::vec3 pos(i - 1 , 0, -5);
+            glm::quat rot(1.f, 0.f, 0.f, 0.f);
 
             engine_entity_create(model_id, pos, rot);
         }
@@ -112,7 +115,3 @@ int main(int argc, char* argv[]) {
 
     exit(EXIT_SUCCESS);
 }
-
-
-// esc doesn't work
-// car's too big

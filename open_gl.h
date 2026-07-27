@@ -60,14 +60,14 @@ public:
 
     GLMaterial(
         std::optional<std::shared_ptr<GLTexture>> texture,
-        Vec3 kd,
-        Vec3 ka
+        glm::vec3 kd,
+        glm::vec3 ka
     ): texture(texture), kd(kd), ka(ka) {}
 
 private:
     std::optional<std::shared_ptr<GLTexture>> texture;
-    Vec3 kd;
-    Vec3 ka;
+    glm::vec3 kd;
+    glm::vec3 ka;
 };
 
 class GLMesh {
@@ -96,33 +96,31 @@ private:
 
 struct RenderableThing {
     std::shared_ptr<GLMesh> mesh;
-    mat4x4 model_transform;
+    glm::mat4x4 model_transform;
 
     RenderableThing(
         std::shared_ptr<GLMesh> mesh,
-        mat4x4 model_transform
-    ): mesh(mesh) {
-        memcpy(this->model_transform, model_transform, sizeof(mat4x4));
-    }
+        glm::mat4x4 model_transform
+    ): mesh(mesh), model_transform(model_transform) {}
 };
 
 struct GLModel {
 public:
     std::vector<std::shared_ptr<GLMesh>> meshes;
-    Vec3 dimensions;
+    glm::vec3 dimensions;
 };
 
 class Entity {
 public:
-    Entity(Vec3 pos, quat rot, float scale, std::shared_ptr<GLModel> model);
+    Entity(glm::vec3 pos, glm::quat rot, float scale, std::shared_ptr<GLModel> model);
     void convert_to_renderables(std::vector<RenderableThing>& output);
-    void set_pos(Vec3 pos);
-    void set_rot(quat rot);
+    void set_pos(glm::vec3 pos);
+    void set_rot(glm::quat rot);
     std::shared_ptr<GLModel> model;
 
 private:
-    Vec3 pos;
-    quat rot;
+    glm::vec3 pos;
+    glm::quat rot;
     float scale;
 };
 

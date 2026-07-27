@@ -107,19 +107,19 @@ void loadMaterialFile(const std::filesystem::path& filename, std::map<std::strin
         } else if(key == "Ka") {
             float a, b, c;
             sscanf(value.c_str(), "%f %f %f", &a, &b, &c);
-            Vec3 ambient = {a, b, c};
+            glm::vec3 ambient = {a, b, c};
             new_material.light_ambient = ambient;
 
         } else if(key == "Kd") {
             float a, b, c;
             sscanf(value.c_str(), "%f %f %f", &a, &b, &c);
-            Vec3 diffuse = {a, b, c};
+            glm::vec3 diffuse = {a, b, c};
             new_material.light_diffuse = diffuse;
 
         } else if(key == "Ks") {
             float a, b, c;
             sscanf(value.c_str(), "%f %f %f", &a, &b, &c);
-            Vec3 specular = {a, b, c};
+            glm::vec3 specular = {a, b, c};
             new_material.light_specular = specular;
 
         } else if(key == "Ns") {
@@ -151,13 +151,13 @@ ObjModel loadObjFile(const std::filesystem::path& filename, std::map<std::string
 
     std::string line;
     ObjModel model;
-    std::vector<Vec3> file_vertices;
-    std::vector<Vec2> uvs;
-    std::vector<Vec3> normals;
+    std::vector<glm::vec3> file_vertices;
+    std::vector<glm::vec2> uvs;
+    std::vector<glm::vec3> normals;
     ObjMesh* current_mesh_ptr = nullptr;
 
-    Vec3 max_size;
-    Vec3 min_size;
+    glm::vec3 max_size(0.f, 0.f, 0.f);
+    glm::vec3 min_size(0.f, 0.f, 0.f);
 
     std::cout << "Processing object file..." << std::endl;
     while(getline(file, line)) {
@@ -185,7 +185,7 @@ ObjModel loadObjFile(const std::filesystem::path& filename, std::map<std::string
         } */else if(key == "v") {
             float x, y, z;
             sscanf(value.c_str(), "%f %f %f", &x, &y, &z);
-            Vec3 position = {x, y, z};
+            glm::vec3 position = {x, y, z};
             file_vertices.push_back(position);
 
         } else if(key == "vt") {
@@ -235,8 +235,8 @@ ObjModel loadObjFile(const std::filesystem::path& filename, std::map<std::string
 
                 face_vertices.push_back(vertex);
 
-                max_size = max_size.max(vertex.position);
-                min_size = min_size.min(vertex.position);
+                max_size = glm::max(max_size, vertex.position);
+                min_size = glm::min(min_size, vertex.position);
             }
 
             for(size_t i = 0; i + 2 < face_vertices.size(); i++) {

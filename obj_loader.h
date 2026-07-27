@@ -1,6 +1,10 @@
 #pragma once
 
-#include "linmath.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "engine.h"
 #include <string>
 #include <vector>
@@ -10,16 +14,16 @@
 #include <filesystem>
 
 struct ObjVertex {
-    Vec3 position;
-    Vec3 normal;
-    Vec2 uv;
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec2 uv;
 };
 
 struct ObjMaterial {
     std::string name;
-    Vec3 light_ambient;
-    Vec3 light_diffuse;
-    Vec3 light_specular;
+    glm::vec3 light_ambient;
+    glm::vec3 light_diffuse;
+    glm::vec3 light_specular;
     float specular_exponent;
     std::optional<std::filesystem::path> diffuse_texture;
 
@@ -33,7 +37,7 @@ struct ObjMesh {
 
 struct ObjModel {
     std::map<std::string, ObjMesh> meshes;
-    Vec3 dimensions;
+    glm::vec3 dimensions;
 };
 
 ObjModel loadObjFile(

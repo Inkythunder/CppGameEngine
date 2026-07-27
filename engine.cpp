@@ -30,8 +30,8 @@ static ModelId current_model_id = 0;
 static EntityId current_entity_id = 0;
 static std::map<std::string, ObjMaterial> materials;
 
-static Vec3 camera_position;
-static quat camera_angle = {0.f, 0.f, 0.f, 1.f};
+static glm::vec3 camera_position;
+static glm::quat camera_angle = {1.f, 0.f, 0.f, 0.f};
 
 static EngineCallbacks* engine_callbacks = nullptr;
 
@@ -209,7 +209,7 @@ ModelId engine_model_load(const std::filesystem::path& path) {
     return current_model_id;
 }
 
-EntityId engine_entity_create(ModelId model, Vec3 position, quat rotation) {
+EntityId engine_entity_create(ModelId model, glm::vec3 position, glm::quat rotation) {
 
     current_entity_id++;
     std::shared_ptr<GLModel> gl_model = models[model];
@@ -229,46 +229,41 @@ EntityId engine_entity_create(ModelId model, Vec3 position, quat rotation) {
     return current_entity_id;
 }
 
-void engine_entity_set_position(EntityId entity, Vec3 position) {
+void engine_entity_set_position(EntityId entity, glm::vec3 position) {
 
     entities.at(entity).set_pos(position);
 }
 
-void engine_entity_set_rotation(EntityId entity, quat rotation) {
+void engine_entity_set_rotation(EntityId entity, glm::quat rotation) {
 
     entities.at(entity).set_rot(rotation);
 }
 
-void engine_set_camera(Vec3 position, quat rotation) {
+void engine_set_camera(glm::vec3 position, glm::quat rotation) {
 
     camera_position = position;
-    memcpy(camera_angle, rotation, sizeof(quat));
+    camera_angle = rotation;
 }
 
 bool engine_is_key_down(int key) {
     return glfwGetKey(window, key) == GLFW_PRESS;
 }
 
-Vec2 engine_get_mouse_position() {
+glm::vec2 engine_get_mouse_position() {
     double x, y;
     glfwGetCursorPos(window, &x, &y);
-    return Vec2((float)x, (float)y);
+    return glm::vec2((float)x, (float)y);
 }
 
 void engine_run_loop() {
 
     std::vector<RenderableThing> list_of_things;
 
-    vec3 point_light = {0, 30, 50};
-    mat4x4 vp;
+    glm::vec3 point_light(0, 30, 50);
+    glm::mat4x4 vp;
 
     while (!glfwWindowShouldClose(window)) {
         engine_callbacks->on_frame_start();
-
-        double now = glfwGetTime();
-        quat spin;
-        quat_rotate(spin, (90.0f * (3.141f / 180.0f) * now), (vec3){0, 1, 0});
-        engine_entity_set_rotation(1, spin);
 
         point_light[0] = (float)cos(glfwGetTime()) * 50.f;
         point_light[2] = (float)sin(glfwGetTime()) * 50.f;
@@ -284,15 +279,11 @@ void engine_run_loop() {
         // Clear the screen
 
         // calculate camera location
-        mat4x4 projection, view;
-        mat4x4_perspective(projection, 1.f, ratio, 0.1f, 100.f);
+        glm::mat4x4 projection, view;
+        projection = glm::perspective(1.f, ratio, 0.1f, 100.f);
 
-        quat inverse_rotation;
-        quat_conj(inverse_rotation, camera_angle);
-        mat4x4_from_quat(view, inverse_rotation);
-        mat4x4_translate_in_place(view, -camera_position.x, -camera_position.y, -camera_position.z);
-
-        mat4x4_mul(vp, projection, view);
+        view = glm::mat4_cast(glm::conjugate(camera_angle)) * glm::translate(glm::mat4(1.f), -camera_position);
+        vp = projection * view;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

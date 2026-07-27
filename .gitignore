@@ -8,4 +8,4 @@ proj
 *.mtl
 *.jpg
 *.png
-
+/build

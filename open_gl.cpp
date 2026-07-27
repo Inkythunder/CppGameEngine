@@ -104,33 +104,27 @@ GLMesh::~GLMesh() {
 }
 
 Entity::Entity(
-    Vec3 pos,
-    quat rot,
+    glm::vec3 pos,
+    glm::quat rot,
     float scale,
     std::shared_ptr<GLModel> model
-): pos(pos), scale(scale), model(model) {
-    memcpy(this->rot, rot, sizeof(quat));
-}
+): model(model), pos(pos), rot(rot), scale(scale) {}
 
 void Entity::convert_to_renderables(std::vector<RenderableThing>& output) {
 
-    mat4x4 m, rotation;
-    mat4x4_from_quat(rotation, this->rot);
-    mat4x4_translate(m, this->pos.x, this->pos.y, this->pos.z);
-    mat4x4_mul(m, m, rotation);
-    mat4x4_scale_aniso(m, m, scale, scale, scale);
+    glm::mat4 model_transform = glm::translate(glm::mat4(1.f), pos) * glm::mat4_cast(rot) * glm::scale(glm::mat4(1.f), glm::vec3(scale));
 
     for(size_t i = 0; i < this->model->meshes.size(); i++) {
 
-        RenderableThing thing(this->model->meshes[i], m);
+        RenderableThing thing(this->model->meshes[i], model_transform);
         output.push_back(thing);
     }
 }
 
-void Entity::set_pos(Vec3 pos) {
+void Entity::set_pos(glm::vec3 pos) {
     this->pos = pos;
 }
 
-void Entity::set_rot(quat rot) {
-    memcpy(this->rot, rot, sizeof(quat));
+void Entity::set_rot(glm::quat rot) {
+    this->rot = rot;
 }
