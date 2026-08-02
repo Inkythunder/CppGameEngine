@@ -17,6 +17,14 @@ struct ObjVertex {
     glm::vec3 position;
     glm::vec3 normal;
     glm::vec2 uv;
+
+    ObjVertex(glm::vec3 position, glm::vec3 normal, glm::vec2 uv): position(position), normal(normal), uv(uv) {}
+
+    ObjVertex() {
+        position = glm::vec3(0.f, 0.f, 0.f);
+        normal = glm::vec3(0.f, 0.f, 0.f);
+        uv = glm::vec2(0.f, 0.f);
+    }
 };
 
 struct ObjMaterial {

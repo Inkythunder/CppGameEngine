@@ -10,6 +10,7 @@ uniform vec3 vPoint;
 uniform vec3 ka;
 uniform vec3 kd;
 uniform float textureless;
+uniform float unlit;
 
 void main()
 {
@@ -18,6 +19,7 @@ void main()
     vec3 norm = normalize(normal);
     vec3 lightDir = normalize(vPoint - fragPos);
     float diff = max(dot(norm, lightDir), 0.0);
+    float light = mix(diff, 1.0, unlit);
 
-    FragColor = vec4(texColour.rgb * kd * diff, 1.0);
+    FragColor = vec4(texColour.rgb * kd * light, 1.0);
 }

@@ -66,6 +66,8 @@ public:
 
         camera_position += move;
         engine_set_camera(camera_position, camera_angle);
+
+        engine_ui_draw_rect(glm::vec2(100, 200), glm::vec2(150, 20)); // making a new rect on screen
     }
     virtual void on_key_event(int key, int action) override {
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
@@ -107,11 +109,17 @@ int main(int argc, char* argv[]) {
             glm::vec3 pos(i - 1 , 0, -5);
             glm::quat rot(1.f, 0.f, 0.f, 0.f);
 
-            engine_entity_create(model_id, pos, rot);
+            engine_entity_create(model_id, pos, rot, glm::vec3{1.f/3.f, 1.f/3.f, 1.f/3.f});
         }
     }
+    engine_entity_create(MODEL_ID_PLANE, glm::vec3{0.f, 0.f, 0.f}, glm::quat{1.f, 0.f, 0.f, 0.f}, glm::vec3{1, 1, 1});
+    engine_entity_create(MODEL_ID_CUBE, glm::vec3{0.f, 0.f, 5.f}, glm::quat{1.f, 0.f, 0.f, 0.f}, glm::vec3{1, 1, 1});
 
     engine_run_loop();
 
     exit(EXIT_SUCCESS);
 }
+
+
+// do cube and sphere
+// fix engine_entity_create scalar

@@ -26,6 +26,10 @@ static GLUniformLocations uniformLocs;
 static std::map<ModelId, std::shared_ptr<GLModel>> models;
 static std::map<EntityId, Entity> entities;
 
+static std::vector<ObjVertex> ui_vertices;
+static GLuint ui_vao, ui_vbo;
+static size_t ui_vbo_capacity = 0;
+
 static ModelId current_model_id = 0;
 static EntityId current_entity_id = 0;
 static std::map<std::string, ObjMaterial> materials;
@@ -34,6 +38,101 @@ static glm::vec3 camera_position;
 static glm::quat camera_angle = {1.f, 0.f, 0.f, 0.f};
 
 static EngineCallbacks* engine_callbacks = nullptr;
+
+static void construct_plane(std::vector<ObjVertex>& vertices) {
+
+    const glm::vec3 n(0, 1, 0);
+    ObjVertex c0{ {-1, 0, -1}, n, {0, 1} };
+    ObjVertex c1{ {-1, 0,  1}, n, {0, 0} };
+    ObjVertex c2{ { 1, 0,  1}, n, {1, 0} };
+    ObjVertex c3{ { 1, 0, -1}, n, {1, 1} };
+
+    vertices.push_back(c0);
+    vertices.push_back(c1);
+    vertices.push_back(c2);
+    vertices.push_back(c0);
+    vertices.push_back(c2);
+    vertices.push_back(c3);
+};
+
+static void construct_cube(std::vector<ObjVertex>& vertices) {
+
+    glm::vec3 cube_corners[8] = {
+        {-1, -1, -1}, // left top back
+        {-1, -1, 1}, // left top front
+        {-1, 1, -1}, // left bottom back
+        {-1, 1, 1}, // left bottom front
+        {1, -1, -1}, // right top back
+        {1, -1, 1}, // right top front
+        {1, 1, -1}, // right bottom back
+        {1, 1, 1} // right bottom front
+    };
+
+    struct Face {
+        glm::vec3 normal;
+        int corners[4];
+    };
+
+    const Face faces[6] = {
+        {{ 1,  0,  0}, {5, 4, 6, 7}}, // right
+        {{-1,  0,  0}, {0, 1, 3, 2}}, // left
+        {{ 0,  1,  0}, {3, 7, 6, 2}}, // top
+        {{ 0, -1,  0}, {0, 4, 5, 1}}, // bottom
+        {{ 0,  0,  1}, {1, 5, 7, 3}}, // front
+        {{ 0,  0, -1}, {4, 0, 2, 6}}  // back
+    };
+
+    const glm::vec2 uvs[4] = { {0, 0}, {1, 0}, {1, 1}, {0, 1} };
+
+    for(const Face& face : faces) {
+        ObjVertex c0{ cube_corners[face.corners[0]], face.normal, uvs[0] };
+        ObjVertex c1{ cube_corners[face.corners[1]], face.normal, uvs[1] };
+        ObjVertex c2{ cube_corners[face.corners[2]], face.normal, uvs[2] };
+        ObjVertex c3{ cube_corners[face.corners[3]], face.normal, uvs[3] };
+
+        vertices.push_back(c0);
+        vertices.push_back(c1);
+        vertices.push_back(c2);
+        vertices.push_back(c0);
+        vertices.push_back(c2);
+        vertices.push_back(c3);
+    }
+
+}
+
+static void construct_sphere(std::vector<ObjVertex>& vertices) {
+
+
+}
+
+static void build_model(ModelId id, const std::vector<ObjVertex>& vertices, glm::vec3 dimensions) {
+
+    std::shared_ptr<GLMaterial> material = std::make_shared<GLMaterial>(std::nullopt, glm::vec3(0.8f), glm::vec3(0.2f));
+    std::shared_ptr<GLModel> model = std::make_shared<GLModel>();
+
+    model->meshes.push_back(std::make_shared<GLMesh>(vertices.data(), vertices.size(), attribLocs, material));
+    model->dimensions = dimensions;
+
+    models[id] = model;
+}
+
+static void create_standard_models(glm::vec3 dimensions) {
+
+    std::vector<ObjVertex> vertices;
+
+    construct_plane(vertices);
+    build_model(MODEL_ID_PLANE, vertices, glm::vec3(2, 0, 2));
+    vertices.clear();
+
+    construct_cube(vertices);
+    build_model(MODEL_ID_CUBE, vertices, glm::vec3(2, 2, 2));
+    vertices.clear();
+
+    //construct_sphere(vertices);
+    //build_model(MODEL_ID_SPHERE, vertices, glm::vec3(2, 2, 2));
+
+    current_model_id = MODEL_ID_SPHERE;
+}
 
 static int get_shader_compile_error(GLuint shader) {
     GLint isCompiled = 0;
@@ -165,12 +264,32 @@ void engine_start(uint16_t window_width, uint16_t window_height, EngineCallbacks
     attribLocs = GLAttributeLocations(vpos_location, vtex_location, vnorm_location);
     uniformLocs = GLUniformLocations(program);
 
+    glGenVertexArrays(1, &ui_vao);
+    glBindVertexArray(ui_vao);
+    glGenBuffers(1, &ui_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, ui_vbo);
+
+    glEnableVertexAttribArray(attribLocs.vpos_location);
+    glVertexAttribPointer(
+        attribLocs.vpos_location, 3, GL_FLOAT, GL_FALSE, sizeof(ObjVertex), (void*)offsetof(ObjVertex, position)
+    );
+    glEnableVertexAttribArray(attribLocs.vnorm_location);
+    glVertexAttribPointer(
+        attribLocs.vnorm_location, 3, GL_FLOAT, GL_FALSE, sizeof(ObjVertex), (void*)offsetof(ObjVertex, normal)
+    );
+    glEnableVertexAttribArray(attribLocs.vtex_location);
+    glVertexAttribPointer(
+        attribLocs.vtex_location, 2, GL_FLOAT, GL_FALSE, sizeof(ObjVertex), (void*)offsetof(ObjVertex, uv)
+    );
+
     // Enable depth test
     glEnable(GL_DEPTH_TEST);
     // don't render the backs of polygons
     glEnable(GL_CULL_FACE);
     // Accept fragment if it closer to the camera than the former one
     glDepthFunc(GL_LESS);
+
+    create_standard_models(glm::vec3(2, 0, 2));
 }
 
 ModelId engine_model_load(const std::filesystem::path& path) {
@@ -209,21 +328,20 @@ ModelId engine_model_load(const std::filesystem::path& path) {
     return current_model_id;
 }
 
-EntityId engine_entity_create(ModelId model, glm::vec3 position, glm::quat rotation) {
+EntityId engine_entity_create(ModelId model, glm::vec3 position, glm::quat rotation, glm::vec3 scale) {
 
     current_entity_id++;
     std::shared_ptr<GLModel> gl_model = models[model];
 
-    float model_scalar = std::max(
+    /*float model_scalar = std::max(
         gl_model->dimensions.x,
         std::max(
             gl_model->dimensions.y,
             gl_model->dimensions.z
         )
-    );
+    );*/
 
-    //
-    Entity entity(position, rotation, 3.0/model_scalar, gl_model);
+    Entity entity(position, rotation, scale, gl_model);
 
     entities.insert({current_entity_id, entity});
     return current_entity_id;
@@ -264,6 +382,11 @@ void engine_run_loop() {
 
     while (!glfwWindowShouldClose(window)) {
         engine_callbacks->on_frame_start();
+        // all rects are built - upload and bind all 2d vertices
+        // make a new mvp matrix (identity)
+        // draw ui
+        glBindBuffer(GL_ARRAY_BUFFER, ui_vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(ObjVertex) * ui_vertices.size(), ui_vertices.data(), GL_STREAM_DRAW);
 
         point_light[0] = (float)cos(glfwGetTime()) * 50.f;
         point_light[2] = (float)sin(glfwGetTime()) * 50.f;
@@ -301,6 +424,28 @@ void engine_run_loop() {
             GLdraw_call(list_of_things[i], uniformLocs);
         }
 
+        glm::mat4 ui_vp = glm::ortho(0.f, (float)width, (float)height, 0.f, -1.f, 1.f);
+        glm::mat4 ui_model(1.f);
+        glUniformMatrix4fv(uniformLocs.vp_location,    1, GL_FALSE, (const GLfloat*)&ui_vp);
+        glUniformMatrix4fv(uniformLocs.model_location, 1, GL_FALSE, (const GLfloat*)&ui_model);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glUniform1f(uniformLocs.textureless_location, 1.f);
+        glUniform3f(uniformLocs.kd_location, 1.f, 1.f, 1.f);
+        glUniform1f(uniformLocs.unlit_location, 1.f);
+
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+
+        glBindVertexArray(ui_vao);
+        glDrawArrays(GL_TRIANGLES, 0, ui_vertices.size());
+
+        glUniform1f(uniformLocs.unlit_location, 0.f);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+
+        ui_vertices.clear();
+
         GLenum err = glGetError();
         if (err != GL_NO_ERROR) {
             printf("GL error: %d\n", err);
@@ -322,3 +467,37 @@ void engine_run_loop() {
 void engine_stop() {
     glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
+
+// creates vertices and adds them to a global vector (go to line 363)
+void engine_ui_draw_rect(glm::vec2 position, glm::vec2 dimensions) {
+
+    ObjVertex top_left(
+        glm::vec3(position.x, position.y, 0),
+        glm::vec3(0, 1, 0),
+        glm::vec2(0, 0)
+    );
+    ObjVertex top_right(
+        glm::vec3(position.x + dimensions.x, position.y, 0),
+        glm::vec3(0, 1, 0),
+        glm::vec2(0, 0)
+    );
+    ObjVertex bottom_left(
+        glm::vec3(position.x, position.y + dimensions.y, 0),
+        glm::vec3(0, 1, 0),
+        glm::vec2(0, 0)
+    );
+    ObjVertex bottom_right(
+        glm::vec3(position.x + dimensions.x, position.y + dimensions.y, 0),
+        glm::vec3(0, 1, 0),
+        glm::vec2(0, 0)
+    );
+
+    ui_vertices.push_back(bottom_left);
+    ui_vertices.push_back(top_left);
+    ui_vertices.push_back(top_right);
+    ui_vertices.push_back(bottom_left);
+    ui_vertices.push_back(top_right);
+    ui_vertices.push_back(bottom_right);
+}
+
+

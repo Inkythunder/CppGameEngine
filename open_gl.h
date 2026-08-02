@@ -26,6 +26,7 @@ struct GLUniformLocations {
     GLint vpoint_location;
     GLint vp_location;
     GLint model_location;
+    GLint unlit_location;
 
     GLUniformLocations (
         GLuint program
@@ -35,7 +36,8 @@ struct GLUniformLocations {
         textureless_location(glGetUniformLocation(program, "textureless")),
         vpoint_location(glGetUniformLocation(program, "vPoint")),
         vp_location(glGetUniformLocation(program, "VP")),
-        model_location(glGetUniformLocation(program, "model")) {}
+        model_location(glGetUniformLocation(program, "model")),
+        unlit_location(glGetUniformLocation(program, "unlit")){}
 
     GLUniformLocations() {}
 };
@@ -112,7 +114,7 @@ public:
 
 class Entity {
 public:
-    Entity(glm::vec3 pos, glm::quat rot, float scale, std::shared_ptr<GLModel> model);
+    Entity(glm::vec3 pos, glm::quat rot, glm::vec3 scale, std::shared_ptr<GLModel> model);
     void convert_to_renderables(std::vector<RenderableThing>& output);
     void set_pos(glm::vec3 pos);
     void set_rot(glm::quat rot);
@@ -121,7 +123,7 @@ public:
 private:
     glm::vec3 pos;
     glm::quat rot;
-    float scale;
+    glm::vec3 scale;
 };
 
 // change objloader to make a vector of meshes

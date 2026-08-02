@@ -11,6 +11,10 @@
 typedef uint64_t EntityId;
 typedef uint64_t ModelId;
 
+static const ModelId MODEL_ID_PLANE = 1;
+static const ModelId MODEL_ID_CUBE = 2;
+static const ModelId MODEL_ID_SPHERE = 3;
+
 struct Offset{
     float x;
     float y;
@@ -33,7 +37,7 @@ void engine_start(uint16_t window_width, uint16_t window_height, EngineCallbacks
 
 ModelId engine_model_load(const std::filesystem::path& path);
 
-EntityId engine_entity_create(ModelId model, glm::vec3 position, glm::quat rotation);
+EntityId engine_entity_create(ModelId model, glm::vec3 position, glm::quat rotation, glm::vec3 scale);
 
 void engine_entity_set_position(EntityId entity, glm::vec3 position);
 
@@ -48,3 +52,5 @@ glm::vec2 engine_get_mouse_position();
 void engine_run_loop();
 
 void engine_stop();
+
+void engine_ui_draw_rect(glm::vec2 position, glm::vec2 dimensions);

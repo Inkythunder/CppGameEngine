@@ -106,13 +106,13 @@ GLMesh::~GLMesh() {
 Entity::Entity(
     glm::vec3 pos,
     glm::quat rot,
-    float scale,
+    glm::vec3 scale,
     std::shared_ptr<GLModel> model
 ): model(model), pos(pos), rot(rot), scale(scale) {}
 
 void Entity::convert_to_renderables(std::vector<RenderableThing>& output) {
 
-    glm::mat4 model_transform = glm::translate(glm::mat4(1.f), pos) * glm::mat4_cast(rot) * glm::scale(glm::mat4(1.f), glm::vec3(scale));
+    glm::mat4 model_transform = glm::translate(glm::mat4(1.f), pos) * glm::mat4_cast(rot) * glm::scale(glm::mat4(1.f), scale);
 
     for(size_t i = 0; i < this->model->meshes.size(); i++) {
 
