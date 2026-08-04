@@ -27,6 +27,8 @@ public:
     virtual void on_game_start() {
 
         wolf = engine_texture_load("wolf.jpg");
+        wolf_w = 630.f;
+        wolf_h = 630.f;
     }
 
     virtual void on_frame_start() {
@@ -72,13 +74,15 @@ public:
         camera_position += move;
         engine_set_camera(camera_position, camera_angle);
 
+        // making a new rect on screen
         engine_ui_draw_rect(
-            glm::vec2(100, 200),
+            glm::vec2(wolf_x, wolf_y),
             glm::vec2(630, 630),
             glm::vec4(1.f),
             wolf
-        ); // making a new rect on screen
+        );
     }
+
     virtual void on_key_event(int key, int action) override {
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
             engine_stop();
@@ -88,11 +92,19 @@ public:
             keys_pressed.erase(key);
         }
     }
+
     virtual void on_mouse_move() {
 
     }
+
     virtual void on_mouse_button_change() {
 
+    }
+
+    virtual void on_window_resolution_change(glm::vec2 res) {
+
+        wolf_x = res.x - wolf_w;
+        wolf_y = res.y - wolf_h;
     }
 
 private:
@@ -101,6 +113,8 @@ private:
     glm::vec2 last_mouse{0.0f};
     bool first_mouse = true;
     TextureId wolf;
+    float wolf_w, wolf_h;
+    float wolf_x, wolf_y;
 };
 
 int main(int argc, char* argv[]) {
@@ -130,7 +144,3 @@ int main(int argc, char* argv[]) {
 
     exit(EXIT_SUCCESS);
 }
-
-
-// do cube and sphere
-// fix engine_entity_create scalar

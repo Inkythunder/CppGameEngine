@@ -376,8 +376,17 @@ void engine_run_loop() {
 
     glm::vec3 point_light(0, 30, 50);
     glm::mat4x4 vp;
+    int width = 0, height = 0;
 
     while (!glfwWindowShouldClose(window)) {
+        // check if the window has changed size since last frame
+        int temp_width, temp_height;
+        glfwGetFramebufferSize(window, &temp_width, &temp_height);
+        if(temp_width != width || temp_height != height) {
+            width = temp_width;
+            height = temp_height;
+            engine_callbacks->on_window_resolution_change(glm::vec2(width, height));
+        }
         engine_callbacks->on_frame_start();
         // all rects are built - upload and bind all 2d vertices
         // make a new mvp matrix (identity)
@@ -388,9 +397,7 @@ void engine_run_loop() {
         point_light[0] = (float)cos(glfwGetTime()) * 50.f;
         point_light[2] = (float)sin(glfwGetTime()) * 50.f;
         glUniform3f(uniformLocs.vpoint_location, point_light[0], point_light[1], point_light[2]);
-        int width, height;
-        // gets the number of pixels in the given window
-        glfwGetFramebufferSize(window, &width, &height);
+
         const float ratio = width / (float) height;
 
         // set the viewport?
@@ -455,7 +462,7 @@ void engine_run_loop() {
                 glUniform1f(uniformLocs.textureless_location, 1.f);
             }
 
-            glDrawArrays(GL_TRIANGLES, 0, ui_vertices.size());
+            glDrawArrays(GL_TRIANGLES, 0, call.vertex_count);
         }
 
         glUniform1f(uniformLocs.alpha_location, 1.f);

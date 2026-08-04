@@ -127,17 +127,3 @@ private:
     glm::quat rot;
     glm::vec3 scale;
 };
-
-// change objloader to make a vector of meshes
-
-/* 1. Unbind textures when there is no texture for a material
- * 2. When no texture bound, texColour needs to be white not black
- * To do this, have a uniform called textureless which is a float: 0 = texture, 1 = no texture
- * add textureless to texColour.rgb (done)
- * 3. in ObjMaterial, wrap path in std::option
- * if path is empty string, don't create GLTexture
- * 4. wrap texture in GLMaterial parameters in option to make optional
- *
- *
- * obj parser
-*/

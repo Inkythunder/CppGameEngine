@@ -42,6 +42,8 @@ public:
     virtual void on_mouse_button_change() = 0;
 
     virtual ~EngineCallbacks() = default;
+
+    virtual void on_window_resolution_change(glm::vec2 res) = 0;
 };
 
 void engine_start(uint16_t window_width, uint16_t window_height, EngineCallbacks& callbacks);
