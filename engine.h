@@ -10,18 +10,29 @@
 
 typedef uint64_t EntityId;
 typedef uint64_t ModelId;
+typedef uint64_t TextureId;
 
 static const ModelId MODEL_ID_PLANE = 1;
 static const ModelId MODEL_ID_CUBE = 2;
 static const ModelId MODEL_ID_SPHERE = 3;
+static const TextureId TEXTURE_ID_NONE = 0;
 
 struct Offset{
     float x;
     float y;
 };
 
+struct UIDrawCall {
+    TextureId texture;
+    glm::vec4 colour;
+    size_t first_vertex;
+    size_t vertex_count;
+};
+
 class EngineCallbacks {
 public:
+    virtual void on_game_start() = 0;
+
     virtual void on_frame_start() = 0;
 
     virtual void on_key_event(int key, int action) = 0;
@@ -53,4 +64,11 @@ void engine_run_loop();
 
 void engine_stop();
 
-void engine_ui_draw_rect(glm::vec2 position, glm::vec2 dimensions);
+void engine_ui_draw_rect(
+    glm::vec2 position,
+    glm::vec2 dimensions,
+    glm::vec4 colour,
+    TextureId texture
+);
+
+TextureId engine_texture_load(const std::filesystem::path& path);

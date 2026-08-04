@@ -25,6 +25,8 @@ static GLUniformLocations uniformLocs;
 
 static std::map<ModelId, std::shared_ptr<GLModel>> models;
 static std::map<EntityId, Entity> entities;
+static std::map<std::string, ObjMaterial> materials;
+static std::map<TextureId, std::shared_ptr<GLTexture>> textures;
 
 static std::vector<ObjVertex> ui_vertices;
 static GLuint ui_vao, ui_vbo;
@@ -32,12 +34,14 @@ static size_t ui_vbo_capacity = 0;
 
 static ModelId current_model_id = 0;
 static EntityId current_entity_id = 0;
-static std::map<std::string, ObjMaterial> materials;
+static TextureId current_texture_id = 0;
 
 static glm::vec3 camera_position;
 static glm::quat camera_angle = {1.f, 0.f, 0.f, 0.f};
 
 static EngineCallbacks* engine_callbacks = nullptr;
+
+static std::vector<UIDrawCall> ui_calls;
 
 static void construct_plane(std::vector<ObjVertex>& vertices) {
 
@@ -290,6 +294,7 @@ void engine_start(uint16_t window_width, uint16_t window_height, EngineCallbacks
     glDepthFunc(GL_LESS);
 
     create_standard_models(glm::vec3(2, 0, 2));
+    engine_callbacks->on_game_start();
 }
 
 ModelId engine_model_load(const std::filesystem::path& path) {
@@ -332,14 +337,6 @@ EntityId engine_entity_create(ModelId model, glm::vec3 position, glm::quat rotat
 
     current_entity_id++;
     std::shared_ptr<GLModel> gl_model = models[model];
-
-    /*float model_scalar = std::max(
-        gl_model->dimensions.x,
-        std::max(
-            gl_model->dimensions.y,
-            gl_model->dimensions.z
-        )
-    );*/
 
     Entity entity(position, rotation, scale, gl_model);
 
@@ -424,9 +421,11 @@ void engine_run_loop() {
             GLdraw_call(list_of_things[i], uniformLocs);
         }
 
+        // UI drawing:
+        // create new vp matrix for the UI with orthoganal projection
         glm::mat4 ui_vp = glm::ortho(0.f, (float)width, (float)height, 0.f, -1.f, 1.f);
         glm::mat4 ui_model(1.f);
-        glUniformMatrix4fv(uniformLocs.vp_location,    1, GL_FALSE, (const GLfloat*)&ui_vp);
+        glUniformMatrix4fv(uniformLocs.vp_location, 1, GL_FALSE, (const GLfloat*)&ui_vp);
         glUniformMatrix4fv(uniformLocs.model_location, 1, GL_FALSE, (const GLfloat*)&ui_model);
 
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -435,15 +434,35 @@ void engine_run_loop() {
         glUniform1f(uniformLocs.unlit_location, 1.f);
 
         glDisable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
 
         glBindVertexArray(ui_vao);
-        glDrawArrays(GL_TRIANGLES, 0, ui_vertices.size());
 
+        // Loop through all of the UIDrawCalls
+        for(const UIDrawCall& call : ui_calls) {
+
+            // send the colour from this draw call (all shapes using the same colour) to the shader
+            glUniform3f(uniformLocs.kd_location, call.colour.r, call.colour.g, call.colour.b);
+            glUniform1f(uniformLocs.alpha_location, call.colour.a);
+
+            std::map<TextureId, std::shared_ptr<GLTexture>>::iterator it = textures.find(call.texture);
+            if(it != textures.end()) {
+                // if the texture in this call is in the textures map, bind it.
+                it->second->bind();
+                glUniform1f(uniformLocs.textureless_location, 0.f);
+            } else {
+                // if the texture in this call is not in the textures map, bind blank texture.
+                glBindTexture(GL_TEXTURE_2D, 0);
+                glUniform1f(uniformLocs.textureless_location, 1.f);
+            }
+
+            glDrawArrays(GL_TRIANGLES, 0, ui_vertices.size());
+        }
+
+        glUniform1f(uniformLocs.alpha_location, 1.f);
         glUniform1f(uniformLocs.unlit_location, 0.f);
         glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);
 
+        ui_calls.clear();
         ui_vertices.clear();
 
         GLenum err = glGetError();
@@ -469,35 +488,39 @@ void engine_stop() {
 }
 
 // creates vertices and adds them to a global vector (go to line 363)
-void engine_ui_draw_rect(glm::vec2 position, glm::vec2 dimensions) {
+void engine_ui_draw_rect(glm::vec2 position, glm::vec2 dimensions, glm::vec4 colour, TextureId texture) {
 
-    ObjVertex top_left(
-        glm::vec3(position.x, position.y, 0),
-        glm::vec3(0, 1, 0),
-        glm::vec2(0, 0)
-    );
-    ObjVertex top_right(
-        glm::vec3(position.x + dimensions.x, position.y, 0),
-        glm::vec3(0, 1, 0),
-        glm::vec2(0, 0)
-    );
-    ObjVertex bottom_left(
-        glm::vec3(position.x, position.y + dimensions.y, 0),
-        glm::vec3(0, 1, 0),
-        glm::vec2(0, 0)
-    );
-    ObjVertex bottom_right(
-        glm::vec3(position.x + dimensions.x, position.y + dimensions.y, 0),
-        glm::vec3(0, 1, 0),
-        glm::vec2(0, 0)
-    );
+    const glm::vec3 n(0, 0, 1);
+    const size_t first = ui_vertices.size();
 
+    // set the positions of the four vertices in the rectangle
+    ObjVertex top_left(glm::vec3(position.x, position.y, 0), n, glm::vec2(0, 1));
+    ObjVertex top_right(glm::vec3(position.x + dimensions.x, position.y, 0), n, glm::vec2(1, 1));
+    ObjVertex bottom_left(glm::vec3(position.x, position.y + dimensions.y, 0), n, glm::vec2(0, 0));
+    ObjVertex bottom_right(glm::vec3(position.x + dimensions.x, position.y + dimensions.y, 0), n, glm::vec2(1, 0));
+
+    // push vertices to the UI vertices array to form triangles going anti-clockwise and sharing a line
     ui_vertices.push_back(bottom_left);
+    ui_vertices.push_back(top_right);
     ui_vertices.push_back(top_left);
-    ui_vertices.push_back(top_right);
     ui_vertices.push_back(bottom_left);
-    ui_vertices.push_back(top_right);
     ui_vertices.push_back(bottom_right);
+    ui_vertices.push_back(top_right);
+
+    // if this rectangle shares a texture with the previous one, increase the number of vertices that draw call
+    // will draw by 6 (one rectangle). Else, make a new UIDrawCall and push it.
+    if(!ui_calls.empty() &&
+        ui_calls.back().texture == texture &&
+        ui_calls.back().colour == colour) {
+
+        ui_calls.back().vertex_count += 6;
+    } else {
+        ui_calls.push_back({texture, colour, first, 6});
+    }
 }
 
-
+TextureId engine_texture_load(const std::filesystem::path& path) {
+    current_texture_id++;
+    textures[current_texture_id] = std::make_shared<GLTexture>(path);
+    return current_texture_id;
+}

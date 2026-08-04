@@ -27,6 +27,7 @@ struct GLUniformLocations {
     GLint vp_location;
     GLint model_location;
     GLint unlit_location;
+    GLint alpha_location;
 
     GLUniformLocations (
         GLuint program
@@ -37,7 +38,8 @@ struct GLUniformLocations {
         vpoint_location(glGetUniformLocation(program, "vPoint")),
         vp_location(glGetUniformLocation(program, "VP")),
         model_location(glGetUniformLocation(program, "model")),
-        unlit_location(glGetUniformLocation(program, "unlit")){}
+        unlit_location(glGetUniformLocation(program, "unlit")),
+        alpha_location(glGetUniformLocation(program, "alpha")){}
 
     GLUniformLocations() {}
 };

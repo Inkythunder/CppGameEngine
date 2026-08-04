@@ -24,6 +24,11 @@ static float camera_pitch = 0.f;
 
 class MyCallbacks : public EngineCallbacks {
 public:
+    virtual void on_game_start() {
+
+        wolf = engine_texture_load("wolf.jpg");
+    }
+
     virtual void on_frame_start() {
 
         double now = glfwGetTime();
@@ -67,7 +72,12 @@ public:
         camera_position += move;
         engine_set_camera(camera_position, camera_angle);
 
-        engine_ui_draw_rect(glm::vec2(100, 200), glm::vec2(150, 20)); // making a new rect on screen
+        engine_ui_draw_rect(
+            glm::vec2(100, 200),
+            glm::vec2(630, 630),
+            glm::vec4(1.f),
+            wolf
+        ); // making a new rect on screen
     }
     virtual void on_key_event(int key, int action) override {
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
@@ -90,6 +100,7 @@ private:
     glm::vec3 camera_position{0.0f};
     glm::vec2 last_mouse{0.0f};
     bool first_mouse = true;
+    TextureId wolf;
 };
 
 int main(int argc, char* argv[]) {

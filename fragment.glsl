@@ -11,6 +11,7 @@ uniform vec3 ka;
 uniform vec3 kd;
 uniform float textureless;
 uniform float unlit;
+uniform float alpha;
 
 void main()
 {
@@ -21,5 +22,5 @@ void main()
     float diff = max(dot(norm, lightDir), 0.0);
     float light = mix(diff, 1.0, unlit);
 
-    FragColor = vec4(texColour.rgb * kd * light, 1.0);
+    FragColor = vec4(texColour.rgb * kd * light, texColour.a * alpha);
 }
