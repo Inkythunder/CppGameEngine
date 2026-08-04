@@ -26,7 +26,7 @@ class MyCallbacks : public EngineCallbacks {
 public:
     virtual void on_game_start() {
 
-        wolf = engine_texture_load("wolf.jpg");
+        wolf = engine_load_texture_from_file("wolf.jpg");
         wolf_w = 630.f;
         wolf_h = 630.f;
     }

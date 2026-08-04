@@ -20,6 +20,7 @@ add_executable(proj
     obj_loader.cpp
     open_gl.cpp
     engine.cpp
+    image.cpp
     gl.c
 )
 target_include_directories(proj PRIVATE ${CMAKE_SOURCE_DIR}/include)

@@ -73,4 +73,6 @@ void engine_ui_draw_rect(
     TextureId texture
 );
 
-TextureId engine_texture_load(const std::filesystem::path& path);
+TextureId engine_load_texture_from_file(const std::filesystem::path& path);
+
+TextureId engine_load_texture_from_bytes(const uint8_t* texture_data, int width, int height, int nrChannels);

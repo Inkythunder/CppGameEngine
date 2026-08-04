@@ -1,34 +1,23 @@
 #include "open_gl.h"
 #include "stb_image.h"
+#include "engine.h"
+#include "image.h"
 #include <iostream>
 
-GLTexture::GLTexture(const std::filesystem::path& texture_path) {
+GLTexture::GLTexture(const uint8_t* texture_data, int width, int height, int nrChannels) {
     GLuint texture;
     glGenTextures(1, &texture);
-
-    std::cout << "Loading texture " << texture << ": " << texture_path << std::endl;
-
     glBindTexture(GL_TEXTURE_2D, texture);
-
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-    stbi_set_flip_vertically_on_load(true);
-
-    int width, height, nrChannels;
-    unsigned char* texture_data = stbi_load(texture_path.c_str(), &width, &height, &nrChannels, 0);
-    if(!texture_data) {
-        throw std::runtime_error("stbi_load failed to load image");
-    }
-
     glTexImage2D(
-        GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, nrChannels == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, texture_data
+        GL_TEXTURE_2D,  0,  GL_RGB,  width,  height,  0,  nrChannels == 3 ? GL_RGB : GL_RGBA,  GL_UNSIGNED_BYTE,  texture_data
     );
     glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(texture_data);
 
     this->texture_id = texture;
 }

@@ -4,6 +4,7 @@
 #include <filesystem>
 #include "engine.h"
 #include "obj_loader.h"
+#include "image.h"
 
 struct GLAttributeLocations {
     GLint vpos_location;
@@ -47,7 +48,7 @@ struct GLUniformLocations {
 class GLTexture {
 public:
     // takes the file path to the texture and uploads it to the GPU. Saves texture as this->texture_id
-    GLTexture(const std::filesystem::path& texture_path);
+    GLTexture(const uint8_t* texture_data, int width, int height, int nrChannels);
     void bind();
     ~GLTexture();
     GLTexture(const GLTexture&) = delete;

@@ -9,6 +9,7 @@
 
 #include "engine.h"
 #include "open_gl.h"
+#include "image.h"
 
 // static "window" global variable
 // don't use window in main. it's all gonna go
@@ -308,7 +309,8 @@ ModelId engine_model_load(const std::filesystem::path& path) {
         ObjMaterial& material = materials[it->second.material_name];
         std::optional<std::shared_ptr<GLTexture>> texture;
         if(material.diffuse_texture) {
-            texture = std::make_shared<GLTexture>(*material.diffuse_texture);
+            StbiImage image(*material.diffuse_texture);
+            texture = std::make_shared<GLTexture>(image.texture_data, image.width, image.height, image.nrChannels);
         }
 
         std::shared_ptr<GLMaterial> glMat = std::make_shared<GLMaterial>(
@@ -526,8 +528,21 @@ void engine_ui_draw_rect(glm::vec2 position, glm::vec2 dimensions, glm::vec4 col
     }
 }
 
-TextureId engine_texture_load(const std::filesystem::path& path) {
+TextureId engine_load_texture_from_file(const std::filesystem::path& path) {
+
+    std::cout << "Loading texture : " << path << std::endl;
+    StbiImage image(path);
+    return engine_load_texture_from_bytes(
+        image.texture_data,
+        image.width,
+        image.height,
+        image.nrChannels
+    );
+}
+
+TextureId engine_load_texture_from_bytes(const uint8_t* texture_data, int width, int height, int nrChannels) {
     current_texture_id++;
-    textures[current_texture_id] = std::make_shared<GLTexture>(path);
+
+    textures[current_texture_id] = std::make_shared<GLTexture>(texture_data, width, height, nrChannels);
     return current_texture_id;
 }
