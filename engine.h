@@ -33,6 +33,13 @@ struct LoadedTexture {
         int height): texture_id(texture_id), width(width), height(height) {}
 };
 
+struct TextureUvs {
+    glm::vec2 top_left;
+    glm::vec2 top_right;
+    glm::vec2 bottom_left;
+    glm::vec2 bottom_right;
+};
+
 class EngineCallbacks {
 public:
     virtual void on_game_start() = 0;
@@ -74,7 +81,8 @@ void engine_ui_draw_rect(
     glm::vec2 position,
     glm::vec2 dimensions,
     glm::vec4 colour,
-    TextureId texture
+    TextureId texture,
+    TextureUvs uvs
 );
 
 LoadedTexture engine_load_texture_from_file(const std::filesystem::path& path);

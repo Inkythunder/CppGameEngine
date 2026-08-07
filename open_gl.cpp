@@ -15,7 +15,7 @@ GLTexture::GLTexture(const uint8_t* texture_data, int width, int height, int nrC
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     glTexImage2D(
-        GL_TEXTURE_2D,  0,  GL_RGB,  width,  height,  0,  nrChannels == 3 ? GL_RGB : GL_RGBA,  GL_UNSIGNED_BYTE,  texture_data
+        GL_TEXTURE_2D,  0,  nrChannels == 3 ? GL_RGB : GL_RGBA,  width,  height,  0,  nrChannels == 3 ? GL_RGB : GL_RGBA,  GL_UNSIGNED_BYTE,  texture_data
     );
     glGenerateMipmap(GL_TEXTURE_2D);
 

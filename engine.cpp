@@ -303,6 +303,8 @@ void engine_start(uint16_t window_width, uint16_t window_height, EngineCallbacks
     glEnable(GL_CULL_FACE);
     // Accept fragment if it closer to the camera than the former one
     glDepthFunc(GL_LESS);
+    // Set standard blending function
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     create_standard_models(glm::vec3(2, 0, 2));
     font_atlas = engine_load_texture_from_file("font_atlas.png");
@@ -454,6 +456,7 @@ void engine_run_loop() {
         glUniform1f(uniformLocs.unlit_location, 1.f);
 
         glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
 
         glBindVertexArray(ui_vao);
 
@@ -481,6 +484,7 @@ void engine_run_loop() {
         glUniform1f(uniformLocs.alpha_location, 1.f);
         glUniform1f(uniformLocs.unlit_location, 0.f);
         glEnable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
 
         ui_calls.clear();
         ui_vertices.clear();
@@ -508,16 +512,16 @@ void engine_stop() {
 }
 
 // creates vertices and adds them to a global vector (go to line 363)
-void engine_ui_draw_rect(glm::vec2 position, glm::vec2 dimensions, glm::vec4 colour, TextureId texture) {
+void engine_ui_draw_rect(glm::vec2 position, glm::vec2 dimensions, glm::vec4 colour, TextureId texture, TextureUvs uvs) {
 
     const glm::vec3 n(0, 0, 1);
     const size_t first = ui_vertices.size();
 
     // set the positions of the four vertices in the rectangle
-    ObjVertex top_left(glm::vec3(position.x, position.y, 0), n, glm::vec2(0, 1));
-    ObjVertex top_right(glm::vec3(position.x + dimensions.x, position.y, 0), n, glm::vec2(1, 1));
-    ObjVertex bottom_left(glm::vec3(position.x, position.y + dimensions.y, 0), n, glm::vec2(0, 0));
-    ObjVertex bottom_right(glm::vec3(position.x + dimensions.x, position.y + dimensions.y, 0), n, glm::vec2(1, 0));
+    ObjVertex top_left(glm::vec3(position.x, position.y, 0), n, uvs.top_left);
+    ObjVertex top_right(glm::vec3(position.x + dimensions.x, position.y, 0), n, uvs.top_right);
+    ObjVertex bottom_left(glm::vec3(position.x, position.y + dimensions.y, 0), n, uvs.bottom_left);
+    ObjVertex bottom_right(glm::vec3(position.x + dimensions.x, position.y + dimensions.y, 0), n, uvs.bottom_right);
 
     // push vertices to the UI vertices array to form triangles going anti-clockwise and sharing a line
     ui_vertices.push_back(bottom_left);
@@ -564,26 +568,38 @@ LoadedTexture engine_load_texture_from_bytes(const uint8_t* texture_data, int wi
 
 void engine_display_text(const char* text, glm::vec2 position, float scale) {
 
-    int atlas_cell_width = font_atlas->width / 16;
-    int atlas_cell_height = font_atlas->height / 6;
-
-    int char_width = atlas_cell_width * scale;
-    int char_height = atlas_cell_height * scale;
-
     size_t i = 0;
     while(text[i] != '\0') {
-        glm::vec2 pos(position.x + char_width * i, position.y);
-        glm::vec2 size(char_width, char_height);
+
+        int code = text[i] - 32;
+
+        int top = 6 - (code / 16);
+        int bottom = top - 1;
+        int left = code % 16;
+        int right = left + 1;
+
+        TextureUvs uvs(
+            glm::vec2((1.f / 16.f) * left, (1.f / 6.f) * top),
+            glm::vec2((1.f / 16.f) * right, (1.f / 6.f) * top),
+            glm::vec2((1.f / 16.f) * left, (1.f / 6.f) * bottom),
+            glm::vec2((1.f / 16.f) * right, (1.f / 6.f) * bottom)
+        );
+
+        glm::vec2 pos(position.x + scale * i, position.y);
+        glm::vec2 size(scale, scale);
         glm::vec4 colour(1.f);
         engine_ui_draw_rect(
             pos,
             size,
             colour,
-            font_atlas->texture_id
+            font_atlas->texture_id,
+            uvs
         );
         i++;
     }
 }
 
 // get width of font atlas and divide by number of characters per line for the cell width
-//
+// atlas starts on 32
+// calculate row by doing text[i] / 16
+// calculate column text[i] % 16

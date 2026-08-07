@@ -77,11 +77,17 @@ public:
             glm::vec2(wolf_x, wolf_y),
             glm::vec2(wolf->width/2, wolf->height/2),
             glm::vec4(1.f),
-            wolf->texture_id
+            wolf->texture_id,
+            TextureUvs(
+                glm::vec2(0, 1),
+                glm::vec2(1, 1),
+                glm::vec2(0, 0),
+                glm::vec2(1, 0)
+            )
         );
 
         // draw text
-        engine_display_text("test text", glm::vec2(100.f, 100.f), 4.f);
+        engine_display_text("test text", glm::vec2(100.f, 100.f), 50.f);
     }
 
     virtual void on_key_event(int key, int action) override {
@@ -134,7 +140,7 @@ int main(int argc, char* argv[]) {
             glm::vec3 pos(i - 1 , 0, -5);
             glm::quat rot(1.f, 0.f, 0.f, 0.f);
 
-            engine_entity_create(model_id, pos, rot, glm::vec3{1.f/3.f, 1.f/3.f, 1.f/3.f});
+            engine_entity_create(model_id, pos, rot, glm::vec3{1.f/10.f, 1.f/10.f, 1.f/10.f});
         }
     }
     engine_entity_create(MODEL_ID_PLANE, glm::vec3{0.f, 0.f, 0.f}, glm::quat{1.f, 0.f, 0.f, 0.f}, glm::vec3{1, 1, 1});
