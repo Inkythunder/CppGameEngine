@@ -22,11 +22,15 @@ struct Offset{
     float y;
 };
 
-struct UIDrawCall {
-    TextureId texture;
-    glm::vec4 colour;
-    size_t first_vertex;
-    size_t vertex_count;
+struct LoadedTexture {
+    TextureId texture_id;
+    int width;
+    int height;
+
+    LoadedTexture(
+        TextureId texture_id,
+        int width,
+        int height): texture_id(texture_id), width(width), height(height) {}
 };
 
 class EngineCallbacks {
@@ -73,6 +77,8 @@ void engine_ui_draw_rect(
     TextureId texture
 );
 
-TextureId engine_load_texture_from_file(const std::filesystem::path& path);
+LoadedTexture engine_load_texture_from_file(const std::filesystem::path& path);
 
-TextureId engine_load_texture_from_bytes(const uint8_t* texture_data, int width, int height, int nrChannels);
+LoadedTexture engine_load_texture_from_bytes(const uint8_t* texture_data, int width, int height, int nrChannels);
+
+void engine_display_text(const char* text, glm::vec2 position, float scale);

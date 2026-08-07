@@ -20,6 +20,13 @@
 // it should save it to a global map of models. modelId -> model
 // do same for create_entity
 
+struct UIDrawCall {
+    TextureId texture;
+    glm::vec4 colour;
+    size_t first_vertex;
+    size_t vertex_count;
+};
+
 static GLFWwindow* window;
 static GLAttributeLocations attribLocs;
 static GLUniformLocations uniformLocs;
@@ -32,6 +39,7 @@ static std::map<TextureId, std::shared_ptr<GLTexture>> textures;
 static std::vector<ObjVertex> ui_vertices;
 static GLuint ui_vao, ui_vbo;
 static size_t ui_vbo_capacity = 0;
+static std::optional<LoadedTexture> font_atlas;
 
 static ModelId current_model_id = 0;
 static EntityId current_entity_id = 0;
@@ -43,6 +51,8 @@ static glm::quat camera_angle = {1.f, 0.f, 0.f, 0.f};
 static EngineCallbacks* engine_callbacks = nullptr;
 
 static std::vector<UIDrawCall> ui_calls;
+
+static std::map<char, glm::vec2> text_chars;
 
 static void construct_plane(std::vector<ObjVertex>& vertices) {
 
@@ -295,6 +305,7 @@ void engine_start(uint16_t window_width, uint16_t window_height, EngineCallbacks
     glDepthFunc(GL_LESS);
 
     create_standard_models(glm::vec3(2, 0, 2));
+    font_atlas = engine_load_texture_from_file("font_atlas.png");
     engine_callbacks->on_game_start();
 }
 
@@ -464,7 +475,7 @@ void engine_run_loop() {
                 glUniform1f(uniformLocs.textureless_location, 1.f);
             }
 
-            glDrawArrays(GL_TRIANGLES, 0, call.vertex_count);
+            glDrawArrays(GL_TRIANGLES, call.first_vertex, call.vertex_count);
         }
 
         glUniform1f(uniformLocs.alpha_location, 1.f);
@@ -528,7 +539,7 @@ void engine_ui_draw_rect(glm::vec2 position, glm::vec2 dimensions, glm::vec4 col
     }
 }
 
-TextureId engine_load_texture_from_file(const std::filesystem::path& path) {
+LoadedTexture engine_load_texture_from_file(const std::filesystem::path& path) {
 
     std::cout << "Loading texture : " << path << std::endl;
     StbiImage image(path);
@@ -540,9 +551,39 @@ TextureId engine_load_texture_from_file(const std::filesystem::path& path) {
     );
 }
 
-TextureId engine_load_texture_from_bytes(const uint8_t* texture_data, int width, int height, int nrChannels) {
+LoadedTexture engine_load_texture_from_bytes(const uint8_t* texture_data, int width, int height, int nrChannels) {
     current_texture_id++;
 
     textures[current_texture_id] = std::make_shared<GLTexture>(texture_data, width, height, nrChannels);
-    return current_texture_id;
+    return LoadedTexture(
+        current_texture_id,
+        width,
+        height
+    );
 }
+
+void engine_display_text(const char* text, glm::vec2 position, float scale) {
+
+    int atlas_cell_width = font_atlas->width / 16;
+    int atlas_cell_height = font_atlas->height / 6;
+
+    int char_width = atlas_cell_width * scale;
+    int char_height = atlas_cell_height * scale;
+
+    size_t i = 0;
+    while(text[i] != '\0') {
+        glm::vec2 pos(position.x + char_width * i, position.y);
+        glm::vec2 size(char_width, char_height);
+        glm::vec4 colour(1.f);
+        engine_ui_draw_rect(
+            pos,
+            size,
+            colour,
+            font_atlas->texture_id
+        );
+        i++;
+    }
+}
+
+// get width of font atlas and divide by number of characters per line for the cell width
+//

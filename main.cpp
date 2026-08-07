@@ -27,8 +27,6 @@ public:
     virtual void on_game_start() {
 
         wolf = engine_load_texture_from_file("wolf.jpg");
-        wolf_w = 630.f;
-        wolf_h = 630.f;
     }
 
     virtual void on_frame_start() {
@@ -77,10 +75,13 @@ public:
         // making a new rect on screen
         engine_ui_draw_rect(
             glm::vec2(wolf_x, wolf_y),
-            glm::vec2(630, 630),
+            glm::vec2(wolf->width/2, wolf->height/2),
             glm::vec4(1.f),
-            wolf
+            wolf->texture_id
         );
+
+        // draw text
+        engine_display_text("test text", glm::vec2(100.f, 100.f), 4.f);
     }
 
     virtual void on_key_event(int key, int action) override {
@@ -103,8 +104,8 @@ public:
 
     virtual void on_window_resolution_change(glm::vec2 res) {
 
-        wolf_x = res.x - wolf_w;
-        wolf_y = res.y - wolf_h;
+        wolf_x = res.x - wolf->width;
+        wolf_y = res.y - wolf->height;
     }
 
 private:
@@ -112,8 +113,7 @@ private:
     glm::vec3 camera_position{0.0f};
     glm::vec2 last_mouse{0.0f};
     bool first_mouse = true;
-    TextureId wolf;
-    float wolf_w, wolf_h;
+    std::optional<LoadedTexture> wolf;
     float wolf_x, wolf_y;
 };
 
