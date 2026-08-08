@@ -9,3 +9,5 @@ proj
 *.jpg
 *.png
 /build
+!game/assets/**
+!engine/assets/**

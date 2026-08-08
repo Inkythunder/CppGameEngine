@@ -5,7 +5,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "engine.h"
+#include "engine/engine.h"
 #include <string>
 #include <vector>
 #include <map>

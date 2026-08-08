@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(glm)
+
+set_and_check(Engine_ASSET_DIR "@PACKAGE_ENGINE_INSTALL_ASSETDIR@")
+
+include("${CMAKE_CURRENT_LIST_DIR}/EngineTargets.cmake")
+check_required_components(Engine)

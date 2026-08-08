@@ -1,20 +1,16 @@
-#define GLAD_GL_IMPLEMENTATION
-#include <glad/gl.h>
 #define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 
 #include <stdlib.h>
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <cstdlib>
+#include <iostream>
+#include <optional>
+#include <print>
 #include <set>
-#include "obj_loader.h"
-#include "open_gl.h"
-#include "engine.h"
+#include "engine/engine.h"
 
 static const float speed = 0.1f;
 static glm::quat camera_angle(1.f, 0.f, 0.f, 0.f);
@@ -31,19 +27,19 @@ public:
 
     virtual void on_frame_start() {
 
-        double now = glfwGetTime();
+        double now = engine_get_time();
         glm::quat spin = glm::angleAxis((float)(90.0f * (3.141f / 180.0f) * now), glm::vec3(0,1,0));
         engine_entity_set_rotation(1, spin);
 
         glm::vec3 move(0.f);
 
         // WASD Movement
-        if(engine_is_key_down(GLFW_KEY_W)) move[2] -= speed;
-        if(engine_is_key_down(GLFW_KEY_A)) move[0] -= speed;
-        if(engine_is_key_down(GLFW_KEY_S)) move[2] += speed;
-        if(engine_is_key_down(GLFW_KEY_D)) move[0] += speed;
-        if(engine_is_key_down(GLFW_KEY_SPACE)) move[1] += speed;
-        if(engine_is_key_down(GLFW_KEY_LEFT_CONTROL)) move[1] -= speed;
+        if(engine_is_key_down(ENGINE_KEY_W)) move[2] -= speed;
+        if(engine_is_key_down(ENGINE_KEY_A)) move[0] -= speed;
+        if(engine_is_key_down(ENGINE_KEY_S)) move[2] += speed;
+        if(engine_is_key_down(ENGINE_KEY_D)) move[0] += speed;
+        if(engine_is_key_down(ENGINE_KEY_SPACE)) move[1] += speed;
+        if(engine_is_key_down(ENGINE_KEY_LEFT_CONTROL)) move[1] -= speed;
 
         move = camera_angle * move;
 
@@ -91,11 +87,11 @@ public:
     }
 
     virtual void on_key_event(int key, int action) override {
-        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        if (key == ENGINE_KEY_ESCAPE && action == ENGINE_PRESS) {
             engine_stop();
-        } else if(action == GLFW_PRESS) {
+        } else if(action == ENGINE_PRESS) {
             keys_pressed.insert(key);
-        } else if(action == GLFW_RELEASE) {
+        } else if(action == ENGINE_RELEASE) {
             keys_pressed.erase(key);
         }
     }

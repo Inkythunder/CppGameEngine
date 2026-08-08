@@ -2,7 +2,7 @@
 
 #include <glad/gl.h>
 #include <filesystem>
-#include "engine.h"
+#include "engine/engine.h"
 #include "obj_loader.h"
 #include "image.h"
 
@@ -17,7 +17,7 @@ struct GLAttributeLocations {
         GLint vnorm_location
     ): vpos_location(vpos_location), vtex_location(vtex_location), vnorm_location(vnorm_location) {}
 
-    GLAttributeLocations() {}
+    GLAttributeLocations(): vpos_location(0), vtex_location(0), vnorm_location(0) {}
 };
 
 struct GLUniformLocations {
@@ -42,7 +42,15 @@ struct GLUniformLocations {
         unlit_location(glGetUniformLocation(program, "unlit")),
         alpha_location(glGetUniformLocation(program, "alpha")){}
 
-    GLUniformLocations() {}
+    GLUniformLocations():
+        ka_location(0),
+        kd_location(0),
+        textureless_location(0),
+        vpoint_location(0),
+        vp_location(0),
+        model_location(0),
+        unlit_location(0),
+        alpha_location(0) {}
 };
 
 class GLTexture {
