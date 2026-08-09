@@ -17,7 +17,7 @@ add_library(engine SHARED
     src/stb_image_impl.cpp
     src/file_utils.cpp
     src/standard_shapes.cpp
-    src/gl.c
+    third_party/glad/gl.c
 )
 add_library(Engine::engine ALIAS engine)
 

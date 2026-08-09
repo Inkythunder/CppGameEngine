@@ -20,7 +20,9 @@ void main()
     vec3 norm = normalize(normal);
     vec3 lightDir = normalize(vPoint - fragPos);
     float diff = max(dot(norm, lightDir), 0.0);
-    float light = mix(diff, 1.0, unlit);
+    const float ambient_light = 0.15;
+    float lit = ambient_light + (1.0 - ambient_light) * diff;
+    float light = mix(lit, 1.0, unlit);
 
     FragColor = vec4(texColour.rgb * kd * light, texColour.a * alpha);
 }

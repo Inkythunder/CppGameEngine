@@ -1,0 +1,26 @@
+newmtl barrel_closed
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0000
+d 1.0000
+illum 2
+map_Kd barrel_closed.PNG
+
+newmtl barrel_gun_powder
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0000
+d 1.0000
+illum 2
+map_Kd barrel_gun_powder.PNG
+
+newmtl barrel_water
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0000
+d 1.0000
+illum 2
+map_Kd barrel_water.PNG

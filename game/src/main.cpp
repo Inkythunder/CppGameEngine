@@ -9,7 +9,6 @@
 #include <iostream>
 #include <optional>
 #include <print>
-#include <set>
 #include "engine/engine.h"
 
 static const float speed = 0.1f;
@@ -122,20 +121,31 @@ int main(int argc, char* argv[]) {
 
     if(argc < 2) {
         std::println(std::cerr, "No object file provided.");
-        return 1;
     } else {
         for(int i = 1; i < argc; i++) {
             std::cout << "argv[" << i << "] = " << argv[1] << std::endl;
             ModelId model_id = engine_model_load(argv[i]);
 
-            glm::vec3 pos(i - 1 , 0, -5);
+            glm::vec3 pos(i - 1, 0, -5);
             glm::quat rot(1.f, 0.f, 0.f, 0.f);
+            glm::vec3 scale(1.f/2.f);
 
-            engine_entity_create(model_id, pos, rot, glm::vec3{1.f/10.f, 1.f/10.f, 1.f/10.f});
+            engine_entity_create(model_id, pos, rot, scale);
         }
     }
-    engine_entity_create(MODEL_ID_PLANE, glm::vec3{0.f, 0.f, 0.f}, glm::quat{1.f, 0.f, 0.f, 0.f}, glm::vec3{1, 1, 1});
-    engine_entity_create(MODEL_ID_CUBE, glm::vec3{0.f, 0.f, 5.f}, glm::quat{1.f, 0.f, 0.f, 0.f}, glm::vec3{1, 1, 1});
+
+    glm::vec3 default_size(1);
+    glm::quat default_rotation(1.f, 0.f, 0.f, 0.f);
+
+    ModelId chair_id = engine_model_load("chair/Philippe Hurel_Peggy_Chair N040226.obj");
+    glm::quat rot(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
+    engine_entity_create(chair_id, glm::vec3(5, 0, 0), rot, glm::vec3(1.f/300.f));
+
+    ModelId car_id = engine_model_load("car/bugatti.obj");
+    engine_entity_create(car_id, glm::vec3(5, 0, -5), default_rotation, glm::vec3(1.f/2.f));
+
+    engine_entity_create(MODEL_ID_PLANE, glm::vec3{0.f, 0.f, 0.f}, default_rotation, default_size);
+    engine_entity_create(MODEL_ID_CUBE, glm::vec3{0.f, 0.f, 5.f}, default_rotation, default_size);
 
     engine_run_loop();
 
