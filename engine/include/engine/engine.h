@@ -74,7 +74,7 @@ public:
     virtual void on_window_resolution_change(glm::vec2 res) = 0;
 };
 
-ENGINE_EXPORT void engine_start(uint16_t window_width, uint16_t window_height, EngineCallbacks& callbacks);
+ENGINE_EXPORT void engine_start(uint16_t window_width, uint16_t window_height, const char* window_title, EngineCallbacks& callbacks);
 
 ENGINE_EXPORT ModelId engine_model_load(const std::filesystem::path& path);
 

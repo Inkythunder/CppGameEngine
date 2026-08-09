@@ -12,12 +12,16 @@ struct GLAttributeLocations {
     GLint vnorm_location;
 
     GLAttributeLocations(
-        GLint vpos_location,
-        GLint vtex_location,
-        GLint vnorm_location
-    ): vpos_location(vpos_location), vtex_location(vtex_location), vnorm_location(vnorm_location) {}
+        GLuint program
+    ):
+        vpos_location(glGetAttribLocation(program, "vPos")),
+        vtex_location(glGetAttribLocation(program, "vTex")),
+        vnorm_location(glGetAttribLocation(program, "vNorm")){}
 
-    GLAttributeLocations(): vpos_location(0), vtex_location(0), vnorm_location(0) {}
+    GLAttributeLocations():
+        vpos_location(0),
+        vtex_location(0),
+        vnorm_location(0) {}
 };
 
 struct GLUniformLocations {

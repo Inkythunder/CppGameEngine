@@ -43,9 +43,9 @@ public:
 
         move = camera_angle * move;
 
-        // Arrow key camera control
+        // Limits looking angle to above head and below feet.
         const float look_speed = 0.003f;
-        const float pitch_limit = 1.55334f;
+        const float pitch_limit = glm::radians(89.0f);
 
         glm::vec2 mouse = engine_get_mouse_position();
         if(first_mouse) {
@@ -89,10 +89,6 @@ public:
     virtual void on_key_event(int key, int action) override {
         if (key == ENGINE_KEY_ESCAPE && action == ENGINE_PRESS) {
             engine_stop();
-        } else if(action == ENGINE_PRESS) {
-            keys_pressed.insert(key);
-        } else if(action == ENGINE_RELEASE) {
-            keys_pressed.erase(key);
         }
     }
 
@@ -111,7 +107,6 @@ public:
     }
 
 private:
-    std::set<int> keys_pressed = {};
     glm::vec3 camera_position{0.0f};
     glm::vec2 last_mouse{0.0f};
     bool first_mouse = true;
@@ -123,7 +118,7 @@ int main(int argc, char* argv[]) {
 
     MyCallbacks my_callbacks;
 
-    engine_start(640, 480, my_callbacks);
+    engine_start(640, 480, "OpenGL C++", my_callbacks);
 
     if(argc < 2) {
         std::println(std::cerr, "No object file provided.");

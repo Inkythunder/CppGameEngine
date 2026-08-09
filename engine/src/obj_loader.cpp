@@ -134,7 +134,7 @@ void loadMaterialFile(const std::filesystem::path& filename, std::map<std::strin
     if(new_material_is_set) {
         materials.insert({new_material.name, new_material});
     }
-    std::cout << "Finished loading material :3" << std::endl;
+    std::cout << "Finished loading material" << std::endl;
 }
 
 ObjModel loadObjFile(const std::filesystem::path& filename, std::map<std::string, ObjMaterial>& materials) {
@@ -247,7 +247,7 @@ ObjModel loadObjFile(const std::filesystem::path& filename, std::map<std::string
         }
     }
 
-    std::cout << "Finished loading object :3" << std::endl;
+    std::cout << "Finished loading object" << std::endl;
 
     model.dimensions = max_size - min_size;
     return model;

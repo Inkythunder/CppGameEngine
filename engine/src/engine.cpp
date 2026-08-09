@@ -12,11 +12,6 @@
 #include "file_utils.h"
 #include "standard_shapes.h"
 
-static void GLdraw_call(RenderableThing& thing, GLUniformLocations& uniforms) {
-
-    thing.mesh->bind(uniforms);
-    glDrawArrays(GL_TRIANGLES, 0, thing.mesh->get_vertex_count());
-}
 
 struct UIDrawCall {
     TextureId texture;
@@ -56,7 +51,7 @@ struct EngineState {
 
     void create_standard_models(glm::vec3 dimensions);
 
-    EngineState(uint16_t window_width, uint16_t window_height, EngineCallbacks& callbacks);
+    EngineState(uint16_t window_width, uint16_t window_height, const char* window_title, EngineCallbacks& callbacks);
     ~EngineState();
 };
 
@@ -70,7 +65,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     state->engine_callbacks->on_key_event(key, action);
 }
 
-EngineState::EngineState(uint16_t window_width, uint16_t window_height, EngineCallbacks& callbacks) {
+EngineState::EngineState(uint16_t window_width, uint16_t window_height, const char* window_title, EngineCallbacks& callbacks) {
 
     const std::string vertex_shader_text = get_shader_content("vertex.glsl");
     const std::string fragment_shader_text = get_shader_content("fragment.glsl");
@@ -84,8 +79,9 @@ EngineState::EngineState(uint16_t window_width, uint16_t window_height, EngineCa
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    window = glfwCreateWindow(window_width, window_height, "OpenGL C++", nullptr, nullptr);
+    window = glfwCreateWindow(window_width, window_height, window_title, nullptr, nullptr);
     if (!window) {
+        std::cout << "Error: " << window << "\n Window could not be initialised." << std::endl;
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
@@ -135,11 +131,7 @@ EngineState::EngineState(uint16_t window_width, uint16_t window_height, EngineCa
 
     glUseProgram(program);
 
-    const GLint vpos_location = glGetAttribLocation(program, "vPos");
-    const GLint vtex_location = glGetAttribLocation(program, "vTex");
-    const GLint vnorm_location = glGetAttribLocation(program, "vNorm");
-
-    attribLocs = GLAttributeLocations(vpos_location, vtex_location, vnorm_location);
+    attribLocs = GLAttributeLocations(program);
     uniformLocs = GLUniformLocations(program);
 
     glGenVertexArrays(1, &ui_vao);
@@ -207,10 +199,10 @@ EngineState::~EngineState() {
     glfwTerminate();
 }
 
-void engine_start(uint16_t window_width, uint16_t window_height, EngineCallbacks& callbacks) {
+void engine_start(uint16_t window_width, uint16_t window_height, const char* window_title, EngineCallbacks& callbacks) {
 
-    // call when the game starts to set up all the opengl stuff
-    state = new EngineState(window_width, window_height, callbacks);
+    // called when the game starts to set up all the opengl stuff
+    state = new EngineState(window_width, window_height, window_title, callbacks);
 }
 
 ModelId engine_model_load(const std::filesystem::path& path) {
@@ -289,7 +281,7 @@ glm::vec2 engine_get_mouse_position() {
 
 void engine_run_loop() {
 
-    std::vector<RenderableThing> list_of_things;
+    std::vector<RenderableThing> renderable_thing_list;
 
     glm::vec3 point_light(0, 30, 50);
     glm::mat4x4 vp;
@@ -308,19 +300,17 @@ void engine_run_loop() {
             state->engine_callbacks->on_window_resolution_change(glm::vec2(width, height));
         }
         state->engine_callbacks->on_frame_start();
-        // all rects are built - upload and bind all 2d vertices
-        // make a new mvp matrix (identity)
-        // draw ui
         glBindBuffer(GL_ARRAY_BUFFER, state->ui_vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(ObjVertex) * state->ui_vertices.size(), state->ui_vertices.data(), GL_STREAM_DRAW);
 
+        // TODO Point light should be made in the game, not as part of the engine itself.
         point_light[0] = (float)cos(glfwGetTime()) * 50.f;
         point_light[2] = (float)sin(glfwGetTime()) * 50.f;
         glUniform3f(state->uniformLocs.vpoint_location, point_light[0], point_light[1], point_light[2]);
 
-        const float ratio = width / (float) height;
+        const float ratio = (float) width / (float) height;
 
-        // set the viewport?
+        // set the viewport
         // viewport is the rectangle that is actually displayed on the screen
         glViewport(0, 0, width, height);
         // Clear the screen
@@ -329,7 +319,10 @@ void engine_run_loop() {
         glm::mat4x4 projection, view;
         projection = glm::perspective(1.f, ratio, 0.1f, 100.f);
 
+        // Turn the camera angle (quaternion) into a 4x4 matrix so that it can be multiplied with the camera position.
+        // Invert the camera angle and camera position because we are moving the world, not the camera.
         view = glm::mat4_cast(glm::conjugate(state->camera_angle)) * glm::translate(glm::mat4(1.f), -(state->camera_position));
+        // Combine the projection and view matrices.
         vp = projection * view;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -337,15 +330,25 @@ void engine_run_loop() {
         // setting the uniform variable mvp_location to mvp(ram)
         glUniformMatrix4fv(state->uniformLocs.vp_location, 1, GL_FALSE, (const GLfloat*) &vp);
 
-        list_of_things.clear();
+        renderable_thing_list.clear();
         for(std::map<EntityId, Entity>::iterator it = state->entities.begin(); it != state->entities.end(); it++) {
-            it->second.convert_to_renderables(list_of_things);
+            it->second.convert_to_renderables(renderable_thing_list);
         }
 
-        for(size_t i = 0; i < list_of_things.size(); i++) {
+        for(size_t i = 0; i < renderable_thing_list.size(); i++) {
 
-            glUniformMatrix4fv(state->uniformLocs.model_location, 1, GL_FALSE, (const GLfloat*) &list_of_things[i].model_transform);
-            GLdraw_call(list_of_things[i], state->uniformLocs);
+            glUniformMatrix4fv(
+                state->uniformLocs.model_location,
+                1,
+                GL_FALSE,
+                (const GLfloat*) &renderable_thing_list[i].model_transform
+            );
+            renderable_thing_list[i].mesh->bind(state->uniformLocs);
+            glDrawArrays(
+                GL_TRIANGLES,
+                0,
+                renderable_thing_list[i].mesh->get_vertex_count()
+            );
         }
 
         // UI drawing:
@@ -405,7 +408,7 @@ void engine_run_loop() {
         glfwPollEvents();
     }
     // cleans up the program at the end
-    list_of_things.clear();
+    renderable_thing_list.clear();
     delete state;
     state = nullptr;
 }
@@ -471,21 +474,26 @@ LoadedTexture engine_load_texture_from_bytes(const uint8_t* texture_data, int wi
 
 void engine_display_text(const char* text, glm::vec2 position, float scale) {
 
+    // Font atlas has 16 columns and 6 rows.
+    constexpr int cols = 16.f;
+    constexpr int rows = 6.f;
+
     size_t i = 0;
     while(text[i] != '\0') {
 
+        // Ascii code of the char we're looking at minus 32 to allow us to iterate through.
         int code = text[i] - 32;
 
-        int top = 6 - (code / 16);
-        int bottom = top - 1;
-        int left = code % 16;
-        int right = left + 1;
+        float top = rows - (code / cols);
+        float bottom = top - 1;
+        float left = code % cols;
+        float right = left + 1;
 
         TextureUvs uvs(
-            glm::vec2((1.f / 16.f) * left, (1.f / 6.f) * top),
-            glm::vec2((1.f / 16.f) * right, (1.f / 6.f) * top),
-            glm::vec2((1.f / 16.f) * left, (1.f / 6.f) * bottom),
-            glm::vec2((1.f / 16.f) * right, (1.f / 6.f) * bottom)
+            glm::vec2(left / cols, top / rows),
+            glm::vec2(right / cols, top / rows),
+            glm::vec2(left / cols, bottom / rows),
+            glm::vec2(right / cols, bottom / rows)
         );
 
         glm::vec2 pos(position.x + scale * i, position.y);
