@@ -7,7 +7,6 @@
 #include <string.h>
 #include <cstdlib>
 #include <iostream>
-#include <optional>
 #include <print>
 #include "engine/engine.h"
 
@@ -21,14 +20,11 @@ class MyCallbacks : public EngineCallbacks {
 public:
     virtual void on_game_start() {
 
-        wolf = engine_load_texture_from_file("wolf.jpg");
     }
 
     virtual void on_frame_start() {
 
         double now = engine_get_time();
-        glm::quat spin = glm::angleAxis((float)(90.0f * (3.141f / 180.0f) * now), glm::vec3(0,1,0));
-        engine_entity_set_rotation(1, spin);
 
         glm::vec3 move(0.f);
 
@@ -67,22 +63,7 @@ public:
         camera_position += move;
         engine_set_camera(camera_position, camera_angle);
 
-        // making a new rect on screen
-        engine_ui_draw_rect(
-            glm::vec2(wolf_x, wolf_y),
-            glm::vec2(wolf->width/2, wolf->height/2),
-            glm::vec4(1.f),
-            wolf->texture_id,
-            TextureUvs(
-                glm::vec2(0, 1),
-                glm::vec2(1, 1),
-                glm::vec2(0, 0),
-                glm::vec2(1, 0)
-            )
-        );
-
-        // draw text
-        engine_display_text("test text", glm::vec2(100.f, 100.f), 50.f);
+        draw_hud();
     }
 
     virtual void on_key_event(int key, int action) override {
@@ -100,17 +81,48 @@ public:
     }
 
     virtual void on_window_resolution_change(glm::vec2 res) {
-
-        wolf_x = res.x - wolf->width;
-        wolf_y = res.y - wolf->height;
+        screen_size = res;
     }
 
 private:
+
+    void draw_hud() {
+        const float text_size = 16.f;
+        const float margin = 10.f;
+        const glm::vec4 white(1.f);
+
+        // Title panel
+        glm::vec2 panel_pos(margin, margin);
+        glm::vec2 panel_size(10 * text_size + margin * 2, text_size + margin * 2);
+        engine_ui_draw_rect(panel_pos, panel_size, glm::vec4(0.f, 0.f, 0.f, 0.5f), TEXTURE_ID_NONE, TextureUvs{});
+        engine_display_text("OpenGL C++", panel_pos + glm::vec2(margin, margin), text_size);
+
+        // Crosshair
+        const float ch_length = 12.f;
+        const float ch_width = 2.f;
+        glm::vec2 centre = screen_size * 0.5f;
+        engine_ui_draw_rect(
+            glm::vec2(centre.x - ch_length / 2, centre.y - ch_width / 2),
+            glm::vec2(ch_length, ch_width),
+            white,
+            TEXTURE_ID_NONE,
+            TextureUvs{}
+        );
+        engine_ui_draw_rect(
+            glm::vec2(centre.x - ch_width / 2, centre.y - ch_length / 2),
+            glm::vec2(ch_width, ch_length),
+            white,
+            TEXTURE_ID_NONE,
+            TextureUvs{}
+        );
+    }
+
     glm::vec3 camera_position{0.0f};
     glm::vec2 last_mouse{0.0f};
     bool first_mouse = true;
-    std::optional<LoadedTexture> wolf;
-    float wolf_x, wolf_y;
+
+    // HUD state
+    glm::vec2 screen_size{640.f, 480.f};
 };
 
 int main(int argc, char* argv[]) {
@@ -144,7 +156,7 @@ int main(int argc, char* argv[]) {
     ModelId car_id = engine_model_load("car/bugatti.obj");
     engine_entity_create(car_id, glm::vec3(5, 0, -5), default_rotation, glm::vec3(1.f/2.f));
 
-    engine_entity_create(MODEL_ID_PLANE, glm::vec3{0.f, 0.f, 0.f}, default_rotation, default_size);
+    engine_entity_create(MODEL_ID_PLANE, glm::vec3{0.f, -2.f, 0.f}, default_rotation, glm::vec3(999.f, 1.f, 999.f));
     engine_entity_create(MODEL_ID_CUBE, glm::vec3{0.f, 0.f, 5.f}, default_rotation, default_size);
 
     engine_run_loop();

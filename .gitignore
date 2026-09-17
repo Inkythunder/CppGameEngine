@@ -7,7 +7,6 @@ proj
 *.obj
 *.mtl
 *.jpg
-*.png
 /build
 !game/assets/**
 !engine/assets/**
