@@ -8,5 +8,4 @@ proj
 *.mtl
 *.jpg
 /build
-!game/assets/**
-!engine/assets/**
+/build-*
