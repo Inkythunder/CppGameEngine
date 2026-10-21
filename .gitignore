@@ -4,9 +4,8 @@ test_files
 proj
 *.o
 *.kate-swp
-*.obj
 *.mtl
 *.jpg
 /build
-!game/assets/**
-!engine/assets/**
+/build-*
+/.idea

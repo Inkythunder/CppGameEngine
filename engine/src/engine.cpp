@@ -11,6 +11,7 @@
 #include "image.h"
 #include "file_utils.h"
 #include "standard_shapes.h"
+#include "physics.h"
 
 
 struct UIDrawCall {
@@ -30,6 +31,7 @@ struct EngineState {
     std::map<EntityId, Entity> entities;
     std::map<std::string, ObjMaterial> materials;
     std::map<TextureId, std::shared_ptr<GLTexture>> textures;
+    std::unique_ptr<PhysicsWorld> physics;
 
     std::vector<ObjVertex> ui_vertices;
     GLuint ui_vao, ui_vbo;
@@ -162,6 +164,8 @@ EngineState::EngineState(uint16_t window_width, uint16_t window_height, const ch
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     create_standard_models(glm::vec3(2, 0, 2));
+
+    physics = std::make_unique<PhysicsWorld>();
 }
 
 void EngineState::build_model(ModelId id, const std::vector<ObjVertex>& vertices, glm::vec3 dimensions) {
@@ -256,11 +260,19 @@ EntityId engine_entity_create(ModelId model, glm::vec3 position, glm::quat rotat
 void engine_entity_set_position(EntityId entity, glm::vec3 position) {
 
     state->entities.at(entity).set_pos(position);
+
+    if (state->physics->has_body(entity)) {
+        state->physics->set_position(entity, position);
+    }
 }
 
 void engine_entity_set_rotation(EntityId entity, glm::quat rotation) {
 
     state->entities.at(entity).set_rot(rotation);
+
+    if (state->physics->has_body(entity)) {
+        state->physics->set_rotation(entity, rotation);
+    }
 }
 
 void engine_set_camera(glm::vec3 position, glm::quat rotation) {
@@ -289,8 +301,20 @@ void engine_run_loop() {
 
     state->font_atlas = engine_load_texture_from_file("font_atlas.png");
     state->engine_callbacks->on_game_start();
+    double last_physics_time = glfwGetTime();
 
     while (!glfwWindowShouldClose(state->window)) {
+
+        double now = glfwGetTime();
+        state->physics->update(now - last_physics_time);
+        last_physics_time = now;
+
+        state->physics->for_each_moving_body([](EntityId id, glm::vec3 position, glm::quat rotation) {
+           Entity& entity = state->entities.at(id);
+           entity.set_pos(position);
+           entity.set_rot(rotation);
+        });
+
         // check if the window has changed size since last frame
         int temp_width, temp_height;
         glfwGetFramebufferSize(state->window, &temp_width, &temp_height);
@@ -512,4 +536,22 @@ void engine_display_text(const char* text, glm::vec2 position, float scale) {
 
 double engine_get_time() {
     return glfwGetTime();
+}
+
+void engine_entity_enable_physics(EntityId entity, EngineShape shape, EngineBodyType type) {
+
+    Entity& e = state->entities.at(entity);
+    state->physics->add_body(entity, e.get_pos(), e.get_rot(), shape, type);
+}
+
+void engine_entity_set_velocity(EntityId entity, glm::vec3 velocity) {
+    state->physics->set_velocity(entity, velocity);
+}
+
+void engine_entity_add_impulse(EntityId entity, glm::vec3 impulse) {
+    state->physics->add_impulse(entity, impulse);
+}
+
+void engine_physics_set_gravity(glm::vec3 gravity) {
+    state->physics->set_gravity(gravity);
 }

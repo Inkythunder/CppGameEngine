@@ -8,3 +8,4 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(engine)
 add_subdirectory(game)
+add_subdirectory(physics_demo)

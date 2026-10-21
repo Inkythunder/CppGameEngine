@@ -110,6 +110,14 @@ void Entity::convert_to_renderables(std::vector<RenderableThing>& output) {
     }
 }
 
+glm::vec3 Entity::get_pos() {
+    return this->pos;
+}
+
+glm::quat Entity::get_rot() {
+    return this->rot;
+}
+
 void Entity::set_pos(glm::vec3 pos) {
     this->pos = pos;
 }

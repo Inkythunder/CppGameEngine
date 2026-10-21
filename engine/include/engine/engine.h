@@ -109,3 +109,55 @@ ENGINE_EXPORT LoadedTexture engine_load_texture_from_bytes(const uint8_t* textur
 ENGINE_EXPORT void engine_display_text(const char* text, glm::vec2 position, float scale);
 
 ENGINE_EXPORT double engine_get_time();
+
+enum EngineBodyType: int {
+    ENGINE_BODY_STATIC = 0,
+    ENGINE_BODY_DYNAMIC = 1,
+    ENGINE_BODY_KINEMATIC = 2,
+};
+
+enum EngineShapeType : int {
+    ENGINE_SHAPE_BOX = 0,
+    ENGINE_SHAPE_SPHERE = 1,
+    ENGINE_SHAPE_PLANE = 2,
+};
+
+struct EngineShape {
+    EngineShapeType type;
+    glm::vec3 half_extents{0.5f};
+    float radius = 0.5f;
+};
+
+inline EngineShape engine_shape_box(glm::vec3 half_extents) {
+    return EngineShape{ENGINE_SHAPE_BOX, half_extents, 0.f};
+}
+
+inline EngineShape engine_shape_sphere(float radius) {
+    return EngineShape{ENGINE_SHAPE_SPHERE, glm::vec3(0.f), radius};
+}
+
+inline EngineShape engine_shape_plane(float half_size) {
+    return EngineShape(ENGINE_SHAPE_PLANE, glm::vec3(half_size, 0.f, half_size), 0.f);
+}
+
+ENGINE_EXPORT void engine_entity_enable_physics(EntityId entity, EngineShape shape, EngineBodyType type);
+
+ENGINE_EXPORT void engine_entity_set_velocity(EntityId entity, glm::vec3 velocity);
+
+ENGINE_EXPORT void engine_entity_add_impulse(EntityId entity, glm::vec3 impulse);
+
+ENGINE_EXPORT void engine_physics_set_gravity(glm::vec3 gravity);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
