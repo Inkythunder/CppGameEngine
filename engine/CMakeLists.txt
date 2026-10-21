@@ -9,6 +9,33 @@ find_package(glfw3 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(glm REQUIRED)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+include(FetchContent)
+
+set(TARGET_UNIT_TESTS       OFF CACHE BOOL "" FORCE)
+set(TARGET_HELLO_WORLD      OFF CACHE BOOL "" FORCE)
+set(TARGET_PERFORMANCE_TEST OFF CACHE BOOL "" FORCE)
+set(TARGET_SAMPLES          OFF CACHE BOOL "" FORCE)
+set(TARGET_VIEWER           OFF CACHE BOOL "" FORCE)
+set(ENABLE_ALL_WARNINGS     OFF CACHE BOOL "" FORCE)
+set(JPH_USE_VK              OFF CACHE BOOL "" FORCE)
+set(ENABLE_INSTALL          OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+    JoltPhysics
+    GIT_REPOSITORY https://github.com/jrouwe/JoltPhysics.git
+    GIT_TAG        v5.6.0
+    GIT_SHALLOW    TRUE
+    SOURCE_SUBDIR  Build
+)
+FetchContent_MakeAvailable(JoltPhysics)
+
+set_target_properties(Jolt PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
+)
+
 add_library(engine SHARED
     src/engine.cpp
     src/open_gl.cpp
@@ -18,6 +45,7 @@ add_library(engine SHARED
     src/file_utils.cpp
     src/standard_shapes.cpp
     third_party/glad/gl.c
+    src/physics.cpp
 )
 add_library(Engine::engine ALIAS engine)
 
@@ -52,6 +80,7 @@ target_include_directories(engine
 target_link_libraries(engine
     PUBLIC  glm::glm
     PRIVATE glfw OpenGL::GL
+    PRIVATE Jolt
 )
 
 install(TARGETS engine

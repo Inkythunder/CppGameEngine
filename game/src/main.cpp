@@ -153,7 +153,7 @@ int main(int argc, char* argv[]) {
     glm::quat rot(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
     engine_entity_create(chair_id, glm::vec3(5, 0, 0), rot, glm::vec3(1.f/300.f));
 
-    ModelId car_id = engine_model_load("car/bugatti.obj");
+    ModelId car_id = engine_model_load("bugatti/bugatti.obj");
     engine_entity_create(car_id, glm::vec3(5, 0, -5), default_rotation, glm::vec3(1.f/2.f));
 
     engine_entity_create(MODEL_ID_PLANE, glm::vec3{0.f, -2.f, 0.f}, default_rotation, glm::vec3(999.f, 1.f, 999.f));
